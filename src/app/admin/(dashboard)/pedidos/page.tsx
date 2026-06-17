@@ -38,7 +38,8 @@ export default function AdminOrdersPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH" });
+  const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping"];
+  const [form, setForm] = useState({ firstName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping" });
   const [formItems, setFormItems] = useState<{ productId: string; name: string; quantity: number; unitPrice: number }[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -80,12 +81,22 @@ export default function AdminOrdersPage() {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, email: "", items: formItems, subtotal, shippingCost, total: subtotal + shippingCost }),
+        body: JSON.stringify({
+          ...form,
+          lastName: "",
+          email: "",
+          deliveryType: form.deliveryType === "MEETING_POINT" ? "INTERIOR_DAC" : form.deliveryType,
+          city: form.deliveryType === "MEETING_POINT" ? form.meetingPoint : form.city,
+          items: formItems,
+          subtotal,
+          shippingCost,
+          total: subtotal + shippingCost,
+        }),
       });
       if (!res.ok) throw new Error();
       toast.success("Pedido cargado.");
       setShowForm(false);
-      setForm({ firstName: "", lastName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH" });
+      setForm({ firstName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping" });
       setFormItems([]);
       loadOrders();
     } catch { toast.error("Error al cargar el pedido."); }
@@ -118,16 +129,16 @@ export default function AdminOrdersPage() {
 
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs text-muted-foreground">Nombre</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
-                <div><label className="text-xs text-muted-foreground">Apellido</label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
+                <div className="col-span-2"><label className="text-xs text-muted-foreground">Nombre</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
               </div>
-              <div><label className="text-xs text-muted-foreground">Telfono</label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+              <div><label className="text-xs text-muted-foreground">Telefono</label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground">Entrega</label>
                   <select value={form.deliveryType} onChange={(e) => setForm({ ...form, deliveryType: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
                     <option value="DOMICILIO">Domicilio (+$150)</option>
                     <option value="INTERIOR_DAC">Interior</option>
+                    <option value="MEETING_POINT">Punto de encuentro</option>
                   </select>
                 </div>
                 <div>
@@ -138,16 +149,35 @@ export default function AdminOrdersPage() {
                   </select>
                 </div>
               </div>
-              {form.deliveryType === "DOMICILIO" && (
+              {form.deliveryType === "MEETING_POINT" && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Shopping</label>
+                  <select value={form.meetingPoint} onChange={(e) => setForm({ ...form, meetingPoint: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
+                    {MEETING_POINTS.map((mp) => <option key={mp} value={mp}>{mp}</option>)}
+                  </select>
+                </div>
+              )}
+              {(form.deliveryType === "DOMICILIO" || form.deliveryType === "INTERIOR_DAC") && (
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-muted-foreground">Direccin</label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Direccion</label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Ciudad</label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
                 </div>
               )}
 
               <div>
                 <label className="text-xs text-muted-foreground">Productos</label>
-                <div className="mt-1 flex flex-col gap-1 max-h-40 overflow-y-auto">
+                <div className="mt-1 flex flex-col gap-1 max-h-48 overflow-y-auto">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide px-1 pt-1">Promos</p>
+                  {[
+                    { id: "promo-x3", name: "Pack x3 — ELFBAR Ice King 40K", price: 3300 },
+                    { id: "promo-x5", name: "Pack x5 — ELFBAR Ice King 40K", price: 5000 },
+                  ].map((p) => (
+                    <button key={p.id} onClick={() => addFormItem(p as Product)} className="flex items-center justify-between rounded-lg border border-[var(--neon-purple)]/30 bg-[var(--neon-purple)]/5 px-3 py-2 text-left hover:bg-[var(--neon-purple)]/10">
+                      <span className="text-sm text-white">{p.name}</span>
+                      <span className="text-xs text-muted-foreground">${p.price.toLocaleString("es-AR")}</span>
+                    </button>
+                  ))}
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide px-1 pt-2">Productos</p>
                   {products.map((p) => (
                     <button key={p.id} onClick={() => addFormItem(p)} className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-left hover:bg-white/5">
                       <span className="text-sm text-white">{p.name}</span>
