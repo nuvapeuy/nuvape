@@ -74,7 +74,7 @@ export default function AdminOrdersPage() {
   const shippingCost = form.deliveryType === "DOMICILIO" ? 150 : 0;
 
   const submitManual = async () => {
-    if (!form.firstName || !form.phone || formItems.length === 0) { toast.error("Completá nombre, teléfono y al menos un producto."); return; }
+    if (!form.firstName || !form.phone || formItems.length === 0) { toast.error("Complet nombre, telfono y al menos un producto."); return; }
     setSubmitting(true);
     try {
       const res = await fetch("/api/orders", {
@@ -121,7 +121,7 @@ export default function AdminOrdersPage() {
                 <div><label className="text-xs text-muted-foreground">Nombre</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
                 <div><label className="text-xs text-muted-foreground">Apellido</label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
               </div>
-              <div><label className="text-xs text-muted-foreground">Teléfono</label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+              <div><label className="text-xs text-muted-foreground">Telfono</label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground">Entrega</label>
@@ -140,7 +140,7 @@ export default function AdminOrdersPage() {
               </div>
               {form.deliveryType === "DOMICILIO" && (
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-muted-foreground">Dirección</label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+                  <div><label className="text-xs text-muted-foreground">Direccin</label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
                   <div><label className="text-xs text-muted-foreground">Ciudad</label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
                 </div>
               )}

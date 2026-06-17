@@ -26,7 +26,7 @@ export default function AdminCustomersPage() {
     <div>
       <h1 className="text-2xl font-bold text-white">Clientes</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Ranking por total gastado — {customers?.length ?? "..."} clientes registrados.
+        Ranking por total gastado &mdash; {customers?.length ?? "..."} clientes registrados.
       </p>
 
       <div className="mt-6 glass rounded-xl overflow-x-auto">
@@ -35,10 +35,10 @@ export default function AdminCustomersPage() {
             <TableRow>
               <TableHead className="w-10">#</TableHead>
               <TableHead>Cliente</TableHead>
-              <TableHead>Teléfono</TableHead>
+              <TableHead>Telefono</TableHead>
               <TableHead>Pedidos</TableHead>
               <TableHead>Total gastado</TableHead>
-              <TableHead>Último pedido</TableHead>
+              <TableHead>Ultimo pedido</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -52,21 +52,21 @@ export default function AdminCustomersPage() {
                 <TableCell className="text-muted-foreground">
                   {i === 0 ? <Trophy className="h-4 w-4 text-yellow-400" /> : i + 1}
                 </TableCell>
-                <TableCell className="font-medium text-white">{c.name || "—"}</TableCell>
+                <TableCell className="font-medium text-white">{c.name || "-"}</TableCell>
                 <TableCell className="text-muted-foreground">{c.phone}</TableCell>
                 <TableCell className="text-muted-foreground">{c.orderCount}</TableCell>
                 <TableCell className="text-white font-semibold">
                   ${c.totalSpent.toLocaleString("es-AR")}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {c.lastOrder ? new Date(c.lastOrder).toLocaleDateString("es-AR") : "—"}
+                  {c.lastOrder ? new Date(c.lastOrder).toLocaleDateString("es-AR") : "-"}
                 </TableCell>
               </TableRow>
             ))}
             {customers?.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  Todavía no hay clientes registrados.
+                  Todavia no hay clientes registrados.
                 </TableCell>
               </TableRow>
             )}

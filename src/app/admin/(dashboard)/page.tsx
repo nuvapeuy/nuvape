@@ -20,10 +20,10 @@ export default function AdminDashboardPage() {
   }, []);
 
   const items = [
-    { label: "Productos activos", value: stats?.activeProducts ?? "—" },
-    { label: "Sin stock", value: stats?.outOfStock ?? "—" },
-    { label: "Pedidos pendientes", value: stats?.pendingOrders ?? "—" },
-    { label: "Clientes registrados", value: stats?.totalCustomers ?? "—" },
+    { label: "Productos activos", value: stats?.activeProducts ?? "-" },
+    { label: "Sin stock", value: stats?.outOfStock ?? "-" },
+    { label: "Pedidos pendientes", value: stats?.pendingOrders ?? "-" },
+    { label: "Clientes registrados", value: stats?.totalCustomers ?? "-" },
   ];
 
   return (
