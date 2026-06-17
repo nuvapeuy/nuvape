@@ -110,9 +110,20 @@ export default function AdminOrdersPage() {
 
   const confirmPromo = (modal: typeof PROMOS[0], sel: Product[], setItems: React.Dispatch<React.SetStateAction<FormItem[]>>, afterConfirm: () => void) => {
     if (sel.length !== modal.qty) return;
-    const names = sel.map((p) => p.name).join(", ");
-    const item: FormItem = { productId: `${modal.id}-${Date.now()}`, name: `${modal.label} — ${names}`, quantity: 1, unitPrice: modal.price };
-    setItems((prev) => [...prev, item]);
+    const unitPrice = Math.round(modal.price / modal.qty);
+    // Agrupar productos repetidos
+    const grouped = sel.reduce<Record<string, { product: Product; qty: number }>>((acc, p) => {
+      if (acc[p.id]) acc[p.id].qty++;
+      else acc[p.id] = { product: p, qty: 1 };
+      return acc;
+    }, {});
+    const newItems: FormItem[] = Object.values(grouped).map(({ product, qty }) => ({
+      productId: product.id,
+      name: `[${modal.label}] ${product.name}`,
+      quantity: qty,
+      unitPrice,
+    }));
+    setItems((prev) => [...prev, ...newItems]);
     afterConfirm();
   };
 
