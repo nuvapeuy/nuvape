@@ -155,7 +155,7 @@ export default function CheckoutPage() {
               <DeliveryOption
                 icon={Package}
                 title="Envío al interior / DAC"
-                description="Pagás el envío al recibir tu pedido, directo a DAC"
+                description="Pagás el envío al recibir tu pedido"
                 active={deliveryType === "INTERIOR_DAC"}
                 onClick={() => setDeliveryType("INTERIOR_DAC")}
               />
