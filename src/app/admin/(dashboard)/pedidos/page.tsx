@@ -289,8 +289,8 @@ export default function AdminOrdersPage() {
                     <p className="text-xs text-muted-foreground">{o.customer.phone}</p>
                     <p className="text-xs text-muted-foreground">{o.customer.address}{o.customer.address && ", "}{o.customer.city}</p>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground" style={{ maxWidth: 200 }}>
-                    <div className="flex flex-col gap-0.5">
+                  <TableCell className="text-xs" style={{ maxWidth: 220 }}>
+                    <div className="flex flex-col gap-1">
                       {(expanded ? o.items : o.items.slice(0, 1)).map((i, idx) => {
                         const full = itemDisplayName(i);
                         const dashIdx = full.indexOf(" — ");
@@ -298,27 +298,20 @@ export default function AdminOrdersPage() {
                         const flavors = dashIdx >= 0 ? full.slice(dashIdx + 3) : null;
                         return (
                           <div key={idx}>
-                            <span className="text-white">{i.quantity}x {title}</span>
-                            {expanded && flavors && (
-                              <p className="text-muted-foreground leading-tight mt-0.5">{flavors}</p>
+                            <span className="text-white font-medium">{i.quantity}x {title}</span>
+                            {flavors && (
+                              <p className="text-muted-foreground leading-snug mt-0.5">{flavors}</p>
                             )}
                           </div>
                         );
                       })}
-                      {(() => {
-                        const hasFlavors = o.items.some((i) => itemDisplayName(i).includes(" — "));
-                        const hasMore = o.items.length > 1;
-                        if (!hasFlavors && !hasMore) return null;
-                        return (
-                          <button onClick={() => toggleExpand(o.id)} className="inline-flex items-center gap-0.5 text-[var(--neon-purple)] hover:underline w-fit mt-0.5">
-                            {expanded
-                              ? <><ChevronDown className="h-3 w-3" /> ocultar</>
-                              : hasMore
-                                ? <><ChevronRight className="h-3 w-3" /> +{o.items.length - 1} más</>
-                                : <><ChevronRight className="h-3 w-3" /> ver sabores</>}
-                          </button>
-                        );
-                      })()}
+                      {o.items.length > 1 && (
+                        <button onClick={() => toggleExpand(o.id)} className="inline-flex items-center gap-0.5 text-[var(--neon-purple)] hover:underline w-fit">
+                          {expanded
+                            ? <><ChevronDown className="h-3 w-3" /> ocultar</>
+                            : <><ChevronRight className="h-3 w-3" /> +{o.items.length - 1} más</>}
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{o.deliveryType === "DOMICILIO" ? "Domicilio" : "Interior"}</TableCell>
