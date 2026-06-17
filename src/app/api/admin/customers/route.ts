@@ -11,7 +11,7 @@ export async function GET() {
             total: true,
             status: true,
             createdAt: true,
-            items: { select: { quantity: true, product: { select: { name: true } } } },
+            items: { select: { quantity: true, productName: true, product: { select: { name: true } } } },
           },
           orderBy: { createdAt: "desc" },
         },
