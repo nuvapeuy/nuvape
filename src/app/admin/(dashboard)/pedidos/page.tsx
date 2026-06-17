@@ -289,18 +289,30 @@ export default function AdminOrdersPage() {
                     <p className="text-xs text-muted-foreground">{o.customer.phone}</p>
                     <p className="text-xs text-muted-foreground">{o.customer.address}{o.customer.address && ", "}{o.customer.city}</p>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[180px]">
-                    {firstItem && (
-                      <span>{firstItem.quantity}x {itemDisplayName(firstItem)}</span>
-                    )}
-                    {hasMany && (
-                      <button onClick={() => toggleExpand(o.id)} className="ml-1 inline-flex items-center gap-0.5 text-[var(--neon-purple)] hover:underline">
-                        {expanded ? <><ChevronDown className="h-3 w-3" /> ocultar</> : <><ChevronRight className="h-3 w-3" />+{o.items.length - 1} más</>}
-                      </button>
-                    )}
-                    {expanded && o.items.slice(1).map((i, idx) => (
-                      <p key={idx} className="mt-0.5">{i.quantity}x {itemDisplayName(i)}</p>
-                    ))}
+                  <TableCell className="text-xs text-muted-foreground" style={{ maxWidth: 200 }}>
+                    <div className="flex flex-col gap-0.5">
+                      {(expanded ? o.items : o.items.slice(0, 1)).map((i, idx) => {
+                        const full = itemDisplayName(i);
+                        const dashIdx = full.indexOf(" — ");
+                        const title = dashIdx >= 0 ? full.slice(0, dashIdx) : full;
+                        const flavors = dashIdx >= 0 ? full.slice(dashIdx + 3) : null;
+                        return (
+                          <div key={idx}>
+                            <span className="text-white">{i.quantity}x {title}</span>
+                            {expanded && flavors && (
+                              <p className="text-muted-foreground leading-tight">{flavors}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {o.items.length > 1 && (
+                        <button onClick={() => toggleExpand(o.id)} className="inline-flex items-center gap-0.5 text-[var(--neon-purple)] hover:underline w-fit mt-0.5">
+                          {expanded
+                            ? <><ChevronDown className="h-3 w-3" /> ocultar</>
+                            : <><ChevronRight className="h-3 w-3" /> +{o.items.length - 1} más</>}
+                        </button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{o.deliveryType === "DOMICILIO" ? "Domicilio" : "Interior"}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{o.paymentMethod === "CASH" ? "Efectivo" : "Transferencia"}</TableCell>
