@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil, Check } from "lucide-react";
 import { toast } from "sonner";
 
 type Order = {
@@ -19,6 +19,15 @@ type Order = {
 
 type Product = { id: string; name: string; price: number; stock: number };
 
+type FormItem = { productId: string; name: string; quantity: number; unitPrice: number };
+
+const PROMOS = [
+  { id: "promo-x3", label: "Pack x3", qty: 3, price: 3300 },
+  { id: "promo-x5", label: "Pack x5", qty: 5, price: 5000 },
+];
+
+const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping"];
+
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pendiente",
   CONFIRMED: "Confirmado",
@@ -33,21 +42,32 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-500/20 text-red-300",
 };
 
+const EMPTY_FORM = { firstName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping" };
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping"];
-  const [form, setForm] = useState({ firstName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping" });
-  const [formItems, setFormItems] = useState<{ productId: string; name: string; quantity: number; unitPrice: number }[]>([]);
+
+  // Modal nuevo pedido
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formItems, setFormItems] = useState<FormItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Selector sabores promo
+  const [promoModal, setPromoModal] = useState<{ id: string; label: string; qty: number; price: number } | null>(null);
+  const [promoSelected, setPromoSelected] = useState<Product[]>([]);
+
+  // Modal edicion pedido
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [editItems, setEditItems] = useState<FormItem[]>([]);
+  const [editPromoModal, setEditPromoModal] = useState<{ id: string; label: string; qty: number; price: number } | null>(null);
+  const [editPromoSelected, setEditPromoSelected] = useState<Product[]>([]);
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const loadOrders = () => {
-    fetch("/api/orders/list")
-      .then((r) => r.json())
-      .then(setOrders)
-      .catch(() => {});
+    fetch("/api/orders/list").then((r) => r.json()).then(setOrders).catch(() => {});
   };
 
   useEffect(() => {
@@ -55,28 +75,81 @@ export default function AdminOrdersPage() {
     fetch("/api/admin/products").then((r) => r.json()).then(setProducts).catch(() => {});
   }, []);
 
-  const updateStatus = async (id: string, status: string) => {
-    setUpdating(id);
-    await fetch(`/api/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
-    setUpdating(null);
-    loadOrders();
+  // ── helpers items ──────────────────────────────────────────────
+  const addItem = (items: FormItem[], setItems: (f: FormItem[]) => void, p: Product) => {
+    const exists = items.find((i) => i.productId === p.id);
+    if (exists) setItems(items.map((i) => i.productId === p.id ? { ...i, quantity: i.quantity + 1 } : i));
+    else setItems([...items, { productId: p.id, name: p.name, quantity: 1, unitPrice: p.price }]);
   };
 
-  const addFormItem = (p: Product) => {
-    const exists = formItems.find((i) => i.productId === p.id);
-    if (exists) {
-      setFormItems((prev) => prev.map((i) => i.productId === p.id ? { ...i, quantity: i.quantity + 1 } : i));
-    } else {
-      setFormItems((prev) => [...prev, { productId: p.id, name: p.name, quantity: 1, unitPrice: p.price }]);
+  const removeItem = (items: FormItem[], setItems: (f: FormItem[]) => void, productId: string) =>
+    setItems(items.filter((i) => i.productId !== productId));
+
+  const calcTotal = (items: FormItem[], deliveryType: string) => {
+    const sub = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+    const ship = deliveryType === "DOMICILIO" ? 150 : 0;
+    return { subtotal: sub, shippingCost: ship, total: sub + ship };
+  };
+
+  // ── promo picker (nuevo pedido) ────────────────────────────────
+  const openPromo = (p: typeof PROMOS[0]) => { setPromoModal(p); setPromoSelected([]); };
+
+  const togglePromoProduct = (p: Product) => {
+    if (!promoModal) return;
+    const count = promoSelected.filter((x) => x.id === p.id).length;
+    if (promoSelected.length < promoModal.qty) setPromoSelected([...promoSelected, p]);
+    else if (count > 0) {
+      const idx = promoSelected.map((x) => x.id).lastIndexOf(p.id);
+      setPromoSelected(promoSelected.filter((_, i) => i !== idx));
     }
   };
 
-  const subtotal = formItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
-  const shippingCost = form.deliveryType === "DOMICILIO" ? 150 : 0;
+  const confirmPromo = () => {
+    if (!promoModal || promoSelected.length !== promoModal.qty) return;
+    const names = promoSelected.map((p) => p.name).join(", ");
+    const item: FormItem = {
+      productId: `${promoModal.id}-${Date.now()}`,
+      name: `${promoModal.label} — ${names}`,
+      quantity: 1,
+      unitPrice: promoModal.price,
+    };
+    setFormItems((prev) => [...prev, item]);
+    setPromoModal(null);
+  };
 
+  // ── promo picker (edicion) ─────────────────────────────────────
+  const openEditPromo = (p: typeof PROMOS[0]) => { setEditPromoModal(p); setEditPromoSelected([]); };
+
+  const toggleEditPromoProduct = (p: Product) => {
+    if (!editPromoModal) return;
+    if (editPromoSelected.length < editPromoModal.qty) setEditPromoSelected([...editPromoSelected, p]);
+    else {
+      const idx = editPromoSelected.map((x) => x.id).lastIndexOf(p.id);
+      if (idx >= 0) setEditPromoSelected(editPromoSelected.filter((_, i) => i !== idx));
+    }
+  };
+
+  const confirmEditPromo = () => {
+    if (!editPromoModal || editPromoSelected.length !== editPromoModal.qty) return;
+    const names = editPromoSelected.map((p) => p.name).join(", ");
+    const item: FormItem = {
+      productId: `${editPromoModal.id}-${Date.now()}`,
+      name: `${editPromoModal.label} — ${names}`,
+      quantity: 1,
+      unitPrice: editPromoModal.price,
+    };
+    setEditItems((prev) => [...prev, item]);
+    setEditPromoModal(null);
+  };
+
+  // ── submit nuevo pedido ────────────────────────────────────────
   const submitManual = async () => {
-    if (!form.firstName || !form.phone || formItems.length === 0) { toast.error("Complet nombre, telfono y al menos un producto."); return; }
+    if (!form.firstName || !form.phone || formItems.length === 0) {
+      toast.error("Completá nombre, teléfono y al menos un producto.");
+      return;
+    }
     setSubmitting(true);
+    const { subtotal, shippingCost, total } = calcTotal(formItems, form.deliveryType);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -90,19 +163,74 @@ export default function AdminOrdersPage() {
           items: formItems,
           subtotal,
           shippingCost,
-          total: subtotal + shippingCost,
+          total,
         }),
       });
       if (!res.ok) throw new Error();
       toast.success("Pedido cargado.");
       setShowForm(false);
-      setForm({ firstName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping" });
+      setForm(EMPTY_FORM);
       setFormItems([]);
       loadOrders();
-    } catch { toast.error("Error al cargar el pedido."); }
-    finally { setSubmitting(false); }
+    } catch {
+      toast.error("Error al cargar el pedido.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
+  // ── guardar edicion ────────────────────────────────────────────
+  const saveEdit = async () => {
+    if (!editOrder || editItems.length === 0) return;
+    setSavingEdit(true);
+    const { subtotal, shippingCost, total } = calcTotal(editItems, editOrder.deliveryType);
+    try {
+      const res = await fetch(`/api/orders/${editOrder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: editItems.map((i) => ({
+            productId: i.productId,
+            productName: i.name,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+          })),
+          subtotal,
+          shippingCost,
+          total,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Pedido actualizado.");
+      setEditOrder(null);
+      loadOrders();
+    } catch {
+      toast.error("Error al guardar los cambios.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const openEdit = (o: Order) => {
+    setEditOrder(o);
+    setEditItems(
+      o.items.map((i, idx) => ({
+        productId: i.product?.name ? `prod-${idx}` : `promo-${idx}`,
+        name: i.productName ?? i.product?.name ?? "?",
+        quantity: i.quantity,
+        unitPrice: 0,
+      }))
+    );
+  };
+
+  const updateStatus = async (id: string, status: string) => {
+    setUpdating(id);
+    await fetch(`/api/orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+    setUpdating(null);
+    loadOrders();
+  };
+
+  // ── render ─────────────────────────────────────────────────────
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -118,100 +246,119 @@ export default function AdminOrdersPage() {
         </button>
       </div>
 
-      {/* Formulario pedido manual */}
+      {/* ── Modal nuevo pedido ── */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="glass w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Nuevo pedido manual</h3>
-              <button onClick={() => setShowForm(false)}><X className="h-5 w-5 text-muted-foreground hover:text-white" /></button>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2"><label className="text-xs text-muted-foreground">Nombre</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
-              </div>
-              <div><label className="text-xs text-muted-foreground">Telefono</label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground">Entrega</label>
-                  <select value={form.deliveryType} onChange={(e) => setForm({ ...form, deliveryType: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
-                    <option value="DOMICILIO">Domicilio (+$150)</option>
-                    <option value="INTERIOR_DAC">Interior</option>
-                    <option value="MEETING_POINT">Punto de encuentro</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Pago</label>
-                  <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
-                    <option value="CASH">Efectivo</option>
-                    <option value="BANK_TRANSFER">Transferencia</option>
-                  </select>
-                </div>
-              </div>
-              {form.deliveryType === "MEETING_POINT" && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Shopping</label>
-                  <select value={form.meetingPoint} onChange={(e) => setForm({ ...form, meetingPoint: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
-                    {MEETING_POINTS.map((mp) => <option key={mp} value={mp}>{mp}</option>)}
-                  </select>
-                </div>
-              )}
-              {(form.deliveryType === "DOMICILIO" || form.deliveryType === "INTERIOR_DAC") && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-muted-foreground">Direccion</label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-                  <div><label className="text-xs text-muted-foreground">Ciudad</label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
-                </div>
-              )}
-
-              <div>
-                <label className="text-xs text-muted-foreground">Productos</label>
-                <div className="mt-1 flex flex-col gap-1 max-h-48 overflow-y-auto">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide px-1 pt-1">Promos</p>
-                  {[
-                    { id: "promo-x3", name: "Pack x3 — ELFBAR Ice King 40K", price: 3300 },
-                    { id: "promo-x5", name: "Pack x5 — ELFBAR Ice King 40K", price: 5000 },
-                  ].map((p) => (
-                    <button key={p.id} onClick={() => addFormItem(p as Product)} className="flex items-center justify-between rounded-lg border border-[var(--neon-purple)]/30 bg-[var(--neon-purple)]/5 px-3 py-2 text-left hover:bg-[var(--neon-purple)]/10">
-                      <span className="text-sm text-white">{p.name}</span>
-                      <span className="text-xs text-muted-foreground">${p.price.toLocaleString("es-AR")}</span>
-                    </button>
-                  ))}
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide px-1 pt-2">Productos</p>
-                  {products.map((p) => (
-                    <button key={p.id} onClick={() => addFormItem(p)} className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-left hover:bg-white/5">
-                      <span className="text-sm text-white">{p.name}</span>
-                      <span className="text-xs text-muted-foreground">${p.price.toLocaleString("es-AR")}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {formItems.length > 0 && (
-                <div className="rounded-lg border border-white/10 p-3 flex flex-col gap-1">
-                  {formItems.map((i) => (
-                    <div key={i.productId} className="flex items-center justify-between text-sm">
-                      <span className="text-white">{i.quantity}x {i.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">${(i.unitPrice * i.quantity).toLocaleString("es-AR")}</span>
-                        <button onClick={() => setFormItems((prev) => prev.filter((x) => x.productId !== i.productId))}><X className="h-3 w-3 text-muted-foreground hover:text-white" /></button>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="mt-2 border-t border-white/10 pt-2 flex justify-between text-sm font-semibold text-white">
-                    <span>Total</span><span>${(subtotal + shippingCost).toLocaleString("es-AR")}</span>
-                  </div>
-                </div>
-              )}
-
-              <button onClick={submitManual} disabled={submitting} className="w-full rounded-lg bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--neon-purple)]/90 disabled:opacity-50 mt-1">
-                {submitting ? "Guardando..." : "Guardar pedido"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <Modal title="Nuevo pedido manual" onClose={() => setShowForm(false)}>
+          <FormFields form={form} setForm={setForm} />
+          <ProductPicker
+            products={products}
+            items={formItems}
+            onAddProduct={(p) => addItem(formItems, setFormItems, p)}
+            onOpenPromo={openPromo}
+          />
+          <ItemsSummary
+            items={formItems}
+            deliveryType={form.deliveryType}
+            onRemove={(id) => removeItem(formItems, setFormItems, id)}
+          />
+          <button
+            onClick={submitManual}
+            disabled={submitting}
+            className="w-full rounded-lg bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--neon-purple)]/90 disabled:opacity-50 mt-1"
+          >
+            {submitting ? "Guardando..." : "Guardar pedido"}
+          </button>
+        </Modal>
       )}
 
+      {/* ── Selector sabores promo (nuevo pedido) ── */}
+      {promoModal && (
+        <Modal title={`${promoModal.label} — elegí ${promoModal.qty} sabores`} onClose={() => setPromoModal(null)}>
+          <p className="text-xs text-muted-foreground mb-2">
+            Seleccionados: {promoSelected.length} / {promoModal.qty}
+          </p>
+          <div className="flex flex-col gap-1 max-h-56 overflow-y-auto">
+            {products.map((p) => {
+              const count = promoSelected.filter((x) => x.id === p.id).length;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => togglePromoProduct(p)}
+                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors ${count > 0 ? "border-[var(--neon-purple)]/60 bg-[var(--neon-purple)]/10" : "border-white/10 hover:bg-white/5"}`}
+                >
+                  <span className="text-sm text-white">{p.name}</span>
+                  {count > 0 && <span className="text-xs font-bold text-[var(--neon-purple)]">x{count}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={confirmPromo}
+            disabled={promoSelected.length !== promoModal.qty}
+            className="mt-3 w-full rounded-lg bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            Confirmar seleccion — ${promoModal.price.toLocaleString("es-AR")}
+          </button>
+        </Modal>
+      )}
+
+      {/* ── Modal edicion pedido ── */}
+      {editOrder && (
+        <Modal title={`Editar pedido — ${editOrder.customer.firstName}`} onClose={() => setEditOrder(null)}>
+          <p className="text-xs text-muted-foreground mb-2">Modificá los productos del pedido.</p>
+          <ProductPicker
+            products={products}
+            items={editItems}
+            onAddProduct={(p) => addItem(editItems, setEditItems, p)}
+            onOpenPromo={openEditPromo}
+          />
+          <ItemsSummary
+            items={editItems}
+            deliveryType={editOrder.deliveryType}
+            onRemove={(id) => removeItem(editItems, setEditItems, id)}
+          />
+          <button
+            onClick={saveEdit}
+            disabled={savingEdit || editItems.length === 0}
+            className="mt-2 w-full rounded-lg bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            {savingEdit ? "Guardando..." : "Guardar cambios"}
+          </button>
+        </Modal>
+      )}
+
+      {/* ── Selector sabores promo (edicion) ── */}
+      {editPromoModal && (
+        <Modal title={`${editPromoModal.label} — elegí ${editPromoModal.qty} sabores`} onClose={() => setEditPromoModal(null)}>
+          <p className="text-xs text-muted-foreground mb-2">
+            Seleccionados: {editPromoSelected.length} / {editPromoModal.qty}
+          </p>
+          <div className="flex flex-col gap-1 max-h-56 overflow-y-auto">
+            {products.map((p) => {
+              const count = editPromoSelected.filter((x) => x.id === p.id).length;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => toggleEditPromoProduct(p)}
+                  className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors ${count > 0 ? "border-[var(--neon-purple)]/60 bg-[var(--neon-purple)]/10" : "border-white/10 hover:bg-white/5"}`}
+                >
+                  <span className="text-sm text-white">{p.name}</span>
+                  {count > 0 && <span className="text-xs font-bold text-[var(--neon-purple)]">x{count}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={confirmEditPromo}
+            disabled={editPromoSelected.length !== editPromoModal.qty}
+            className="mt-3 w-full rounded-lg bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            Confirmar seleccion — ${editPromoModal.price.toLocaleString("es-AR")}
+          </button>
+        </Modal>
+      )}
+
+      {/* ── Tabla pedidos ── */}
       <div className="mt-6 glass rounded-xl overflow-x-auto">
         <Table>
           <TableHeader>
@@ -237,7 +384,9 @@ export default function AdminOrdersPage() {
                   <p className="text-xs text-muted-foreground">{o.customer.phone}</p>
                   <p className="text-xs text-muted-foreground">{o.customer.address}{o.customer.address && ", "}{o.customer.city}</p>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{o.items.map((i) => `${i.quantity}x ${i.productName ?? i.product?.name ?? "?"}`).join(", ")}</TableCell>
+                <TableCell className="text-muted-foreground text-xs max-w-[180px]">
+                  {o.items.map((i) => `${i.quantity}x ${i.productName ?? i.product?.name ?? "?"}`).join(", ")}
+                </TableCell>
                 <TableCell className="text-muted-foreground text-xs">{o.deliveryType === "DOMICILIO" ? "Domicilio" : "Interior"}</TableCell>
                 <TableCell className="text-muted-foreground text-xs">{o.paymentMethod === "CASH" ? "Efectivo" : "Transferencia"}</TableCell>
                 <TableCell className="text-white">${Number(o.total).toLocaleString("es-AR")}</TableCell>
@@ -246,9 +395,15 @@ export default function AdminOrdersPage() {
                     {STATUS_LABELS[o.status] ?? o.status}
                   </span>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{new Date(o.createdAt).toLocaleDateString("es-AR")}</TableCell>
+                <TableCell className="text-muted-foreground text-xs">{new Date(o.createdAt).toLocaleDateString("es-AR")}</TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
+                    <button
+                      onClick={() => openEdit(o)}
+                      className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white flex items-center gap-1"
+                    >
+                      <Pencil className="h-3 w-3" /> Editar
+                    </button>
                     {o.status === "PENDING" && (
                       <button onClick={() => updateStatus(o.id, "CONFIRMED")} disabled={updating === o.id} className="text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50">Confirmar</button>
                     )}
@@ -267,6 +422,140 @@ export default function AdminOrdersPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+    </div>
+  );
+}
+
+// ── Sub-componentes ──────────────────────────────────────────────
+
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="glass w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-white">{title}</h3>
+          <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground hover:text-white" /></button>
+        </div>
+        <div className="flex flex-col gap-3">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function FormFields({ form, setForm }: { form: Record<string, string>; setForm: (f: Record<string, string>) => void }) {
+  return (
+    <>
+      <div>
+        <label className="text-xs text-muted-foreground">Nombre</label>
+        <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Telefono</label>
+        <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground">Entrega</label>
+          <select value={form.deliveryType} onChange={(e) => setForm({ ...form, deliveryType: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
+            <option value="DOMICILIO">Domicilio (+$150)</option>
+            <option value="INTERIOR_DAC">Interior</option>
+            <option value="MEETING_POINT">Punto de encuentro</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Pago</label>
+          <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
+            <option value="CASH">Efectivo</option>
+            <option value="BANK_TRANSFER">Transferencia</option>
+          </select>
+        </div>
+      </div>
+      {form.deliveryType === "MEETING_POINT" && (
+        <div>
+          <label className="text-xs text-muted-foreground">Shopping</label>
+          <select value={form.meetingPoint} onChange={(e) => setForm({ ...form, meetingPoint: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
+            {["Portones Shopping", "Nuevocentro Shopping"].map((mp) => <option key={mp} value={mp}>{mp}</option>)}
+          </select>
+        </div>
+      )}
+      {(form.deliveryType === "DOMICILIO" || form.deliveryType === "INTERIOR_DAC") && (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground">Direccion</label>
+            <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Ciudad</label>
+            <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ProductPicker({ products, items, onAddProduct, onOpenPromo }: {
+  products: Product[];
+  items: FormItem[];
+  onAddProduct: (p: Product) => void;
+  onOpenPromo: (p: typeof PROMOS[0]) => void;
+}) {
+  return (
+    <div>
+      <label className="text-xs text-muted-foreground">Agregar productos</label>
+      <div className="mt-1 flex flex-col gap-1 max-h-48 overflow-y-auto">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wide px-1 pt-1">Promos</p>
+        {PROMOS.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => onOpenPromo(p)}
+            className="flex items-center justify-between rounded-lg border border-[var(--neon-purple)]/30 bg-[var(--neon-purple)]/5 px-3 py-2 text-left hover:bg-[var(--neon-purple)]/10"
+          >
+            <span className="text-sm text-white">{p.label} <span className="text-[10px] text-muted-foreground">(elegir sabores)</span></span>
+            <span className="text-xs text-muted-foreground">${p.price.toLocaleString("es-AR")}</span>
+          </button>
+        ))}
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wide px-1 pt-2">Productos</p>
+        {products.map((p) => {
+          const inCart = items.find((i) => i.productId === p.id);
+          return (
+            <button
+              key={p.id}
+              onClick={() => onAddProduct(p)}
+              className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-left hover:bg-white/5"
+            >
+              <span className="text-sm text-white">{p.name}</span>
+              <div className="flex items-center gap-2">
+                {inCart && <span className="text-xs text-[var(--neon-purple)] font-semibold">x{inCart.quantity}</span>}
+                <span className="text-xs text-muted-foreground">${p.price.toLocaleString("es-AR")}</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ItemsSummary({ items, deliveryType, onRemove }: { items: FormItem[]; deliveryType: string; onRemove: (id: string) => void }) {
+  if (items.length === 0) return null;
+  const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const shipping = deliveryType === "DOMICILIO" ? 150 : 0;
+  return (
+    <div className="rounded-lg border border-white/10 p-3 flex flex-col gap-1">
+      {items.map((i) => (
+        <div key={i.productId} className="flex items-center justify-between text-sm">
+          <span className="text-white truncate mr-2">{i.quantity}x {i.name}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-muted-foreground">${(i.unitPrice * i.quantity).toLocaleString("es-AR")}</span>
+            <button onClick={() => onRemove(i.productId)}><X className="h-3 w-3 text-muted-foreground hover:text-white" /></button>
+          </div>
+        </div>
+      ))}
+      <div className="mt-2 border-t border-white/10 pt-2 flex justify-between text-sm font-semibold text-white">
+        <span>Total</span>
+        <span>${(subtotal + shipping).toLocaleString("es-AR")}</span>
       </div>
     </div>
   );
