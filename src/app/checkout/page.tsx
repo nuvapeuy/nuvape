@@ -38,7 +38,7 @@ export default function CheckoutPage() {
     phone: "",
     email: "",
     address: "",
-    city: "",
+    city: "Montevideo",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -131,15 +131,16 @@ export default function CheckoutPage() {
               <Field label="Teléfono">
                 <Input required placeholder="+598 99 123 456" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
               </Field>
-              <Field label="Email">
-                <Input required type="email" placeholder="tu@email.com" value={form.email} onChange={(e) => update("email", e.target.value)} />
-              </Field>
-              <Field label="Dirección" className="sm:col-span-2">
-                <Input required value={form.address} onChange={(e) => update("address", e.target.value)} />
-              </Field>
-              <Field label="Ciudad">
-                <Input required value={form.city} onChange={(e) => update("city", e.target.value)} />
-              </Field>
+              {(deliveryType === "DOMICILIO" || deliveryType === "INTERIOR_DAC") && (
+                <>
+                  <Field label="Dirección" className="sm:col-span-2">
+                    <Input required value={form.address} onChange={(e) => update("address", e.target.value)} />
+                  </Field>
+                  <Field label="Ciudad">
+                    <Input required value={form.city} onChange={(e) => update("city", e.target.value)} />
+                  </Field>
+                </>
+              )}
             </div>
           </Card>
 
@@ -261,9 +262,6 @@ export default function CheckoutPage() {
           >
             {submitting ? "Enviando..." : "Confirmar pedido"}
           </Button>
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            Al confirmar se abrirá WhatsApp con los datos para coordinar el pago.
-          </p>
         </div>
       </form>
     </div>
