@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     });
     orderId = order.id;
   } catch (dbErr) {
-    console.warn("[orders] BD no disponible, continuando sin guardar:", dbErr);
+    console.error("[orders] Error al guardar en BD:", JSON.stringify(dbErr, null, 2));
   }
 
   try {

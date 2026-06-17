@@ -12,7 +12,7 @@ import { Truck, Package, Minus, Plus, Banknote, Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SHIPPING_COST = 150;
-const WHATSAPP_NUMBER = "5490000000000";
+const WHATSAPP_NUMBER = "59892052416";
 
 type DeliveryType = "DOMICILIO" | "INTERIOR_DAC";
 type PaymentMethod = "CASH" | "BANK_TRANSFER";
@@ -94,11 +94,8 @@ export default function CheckoutPage() {
       });
       if (!res.ok) throw new Error("No se pudo registrar el pedido");
 
-      const waMessage = buildWhatsAppMessage();
-      const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`;
       clear();
-      window.open(waUrl, "_blank");
-      toast.success("¡Pedido recibido! Te abrimos WhatsApp para coordinar el pago.");
+      toast.success("¡Pedido recibido! Nos pondremos en contacto a la brevedad.");
       router.push("/");
     } catch {
       toast.error("Hubo un error al registrar tu pedido. Intentá nuevamente.");

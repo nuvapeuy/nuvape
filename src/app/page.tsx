@@ -6,7 +6,7 @@ import { FlagPill } from "@/components/flag-pill";
 import { ProductRow } from "@/components/product-row";
 import { TrustSection } from "@/components/trust-section";
 import { BrandsStrip } from "@/components/brands-strip";
-import { MOCK_PRODUCTS } from "@/lib/mock-data";
+import { getProducts } from "@/lib/products";
 import { cn } from "@/lib/utils";
 
 const WHATSAPP_NUMBER = "59892052416";
@@ -20,12 +20,13 @@ const HERO_PRODUCT = {
   slug: "miami-mint-40k",
 };
 
-export default function Home() {
+export default async function Home() {
+  const allProducts = await getProducts();
   const hero = HERO_PRODUCT;
 
-  const bestSellers = MOCK_PRODUCTS.filter((p) => p.flags.includes("HOT"));
-  const menthols = MOCK_PRODUCTS.filter((p) => p.flavors.some((f) => /mint/i.test(f)));
-  const fruity = MOCK_PRODUCTS.filter((p) =>
+  const bestSellers = allProducts.filter((p) => p.flags.includes("HOT"));
+  const menthols = allProducts.filter((p) => p.flavors.some((f) => /mint/i.test(f)));
+  const fruity = allProducts.filter((p) =>
     p.flavors.some((f) => /mango|grape|watermelon|razz|peach/i.test(f))
   );
 

@@ -6,7 +6,7 @@ import { useCartStore, cartSubtotal } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
 
-const SHIPPING_COST = 1500;
+const SHIPPING_COST = 150;
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);

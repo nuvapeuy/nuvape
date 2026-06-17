@@ -5,13 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
-  Tag,
-  Sparkles,
   ShoppingBag,
   Users,
-  Percent,
-  Image as ImageIcon,
-  Settings,
   LogOut,
 } from "lucide-react";
 import type { AdminSession } from "@/lib/admin-auth";
@@ -19,14 +14,9 @@ import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/productos", label: "Productos", icon: Package },
-  { href: "/admin/marcas", label: "Marcas", icon: Tag },
-  { href: "/admin/flags", label: "Etiquetas", icon: Sparkles },
   { href: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
-  { href: "/admin/promociones", label: "Promociones", icon: Percent },
-  { href: "/admin/banners", label: "Banners", icon: ImageIcon },
-  { href: "/admin/configuracion", label: "Configuración", icon: Settings },
+  { href: "/admin/productos", label: "Productos", icon: Package },
 ];
 
 export function AdminSidebar({ session }: { session: AdminSession }) {
@@ -47,7 +37,7 @@ export function AdminSidebar({ session }: { session: AdminSession }) {
       </div>
 
       <nav className="mt-4 flex flex-1 flex-col gap-1">
-        {LINKS.filter((l) => session.role === "ADMIN" || l.href !== "/admin/configuracion").map((link) => {
+        {LINKS.map((link) => {
           const Icon = link.icon;
           const active = pathname === link.href;
           return (
