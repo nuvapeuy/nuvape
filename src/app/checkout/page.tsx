@@ -14,8 +14,10 @@ import { cn } from "@/lib/utils";
 const SHIPPING_COST = 150;
 const WHATSAPP_NUMBER = "59892052416";
 
-type DeliveryType = "DOMICILIO" | "INTERIOR_DAC";
+type DeliveryType = "DOMICILIO" | "INTERIOR_DAC" | "MEETING_POINT";
 type PaymentMethod = "CASH" | "BANK_TRANSFER";
+
+const MEETING_POINTS = ["PORTONES SHOPPING", "NUEVO CENTRO SHOPPING"];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -25,6 +27,7 @@ export default function CheckoutPage() {
   const subtotal = cartSubtotal(items);
 
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("DOMICILIO");
+  const [meetingPoint, setMeetingPoint] = useState(MEETING_POINTS[0]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const shippingCost = deliveryType === "DOMICILIO" ? (items.length > 0 ? SHIPPING_COST : 0) : 0;
   const total = subtotal + shippingCost;
@@ -79,7 +82,8 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          deliveryType,
+          deliveryType: deliveryType === "MEETING_POINT" ? "INTERIOR_DAC" : deliveryType,
+          city: deliveryType === "MEETING_POINT" ? meetingPoint : form.city,
           paymentMethod,
           items: items.map((i) => ({
             productId: i.productId,
@@ -140,7 +144,7 @@ export default function CheckoutPage() {
           </Card>
 
           <Card title="Tipo de entrega">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <DeliveryOption
                 icon={Truck}
                 title="Envío a domicilio"
@@ -155,7 +159,28 @@ export default function CheckoutPage() {
                 active={deliveryType === "INTERIOR_DAC"}
                 onClick={() => setDeliveryType("INTERIOR_DAC")}
               />
+              <DeliveryOption
+                icon={Package}
+                title="Punto de encuentro"
+                description="Nos encontramos en un shopping"
+                active={deliveryType === "MEETING_POINT"}
+                onClick={() => setDeliveryType("MEETING_POINT")}
+              />
             </div>
+            {deliveryType === "MEETING_POINT" && (
+              <div className="mt-3">
+                <Label className="mb-1.5 block text-sm text-muted-foreground">Elegí el shopping</Label>
+                <select
+                  value={meetingPoint}
+                  onChange={(e) => setMeetingPoint(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[var(--neon-purple)]"
+                >
+                  {MEETING_POINTS.map((mp) => (
+                    <option key={mp} value={mp}>{mp}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </Card>
 
           <Card title="Método de pago">
@@ -221,7 +246,7 @@ export default function CheckoutPage() {
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Envío</span>
-              <span>{deliveryType === "INTERIOR_DAC" ? "A coordinar" : `$${shippingCost.toLocaleString("es-AR")}`}</span>
+              <span>{deliveryType === "DOMICILIO" ? `$${shippingCost.toLocaleString("es-AR")}` : "Sin costo"}</span>
             </div>
             <div className="mt-2 flex justify-between border-t border-white/10 pt-2 text-base font-semibold text-white">
               <span>Total</span>
