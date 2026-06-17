@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+async function decrementStock(productId: string, quantity: number) {
+  await prisma.$executeRaw`
+    UPDATE "Product" SET stock = GREATEST(stock - ${quantity}, 0) WHERE id = ${productId}
+  `;
+}
+
 type ItemInput = {
   productId?: string | null;
   productName?: string | null;
@@ -70,10 +76,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if (isDelivered) {
         for (const item of body.items) {
           if (isRealProduct(item.productId)) {
-            await prisma.product.update({
-              where: { id: item.productId! },
-              data: { stock: { decrement: item.quantity } },
-            });
+            await decrementStock(item.productId!, item.quantity);
           }
         }
       }
@@ -110,10 +113,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (status === "DELIVERED") {
       for (const item of order.items) {
         if (isRealProduct(item.productId)) {
-          await prisma.product.update({
-            where: { id: item.productId! },
-            data: { stock: { decrement: item.quantity } },
-          });
+          await decrementStock(item.productId!, item.quantity);
         }
       }
     }
