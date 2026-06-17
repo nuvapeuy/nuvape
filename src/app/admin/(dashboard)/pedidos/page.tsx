@@ -443,7 +443,9 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-function FormFields({ form, setForm }: { form: Record<string, string>; setForm: (f: Record<string, string>) => void }) {
+type FormState = { firstName: string; phone: string; address: string; city: string; deliveryType: string; paymentMethod: string; meetingPoint: string };
+
+function FormFields({ form, setForm }: { form: FormState; setForm: (f: FormState) => void }) {
   return (
     <>
       <div>
