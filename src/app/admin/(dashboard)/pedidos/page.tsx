@@ -172,7 +172,7 @@ export default function AdminOrdersPage() {
       toast.success("Pedido actualizado.");
       setEditOrder(null);
       loadOrders();
-    } catch { toast.error("Error al guardar los cambios."); }
+    } catch (err) { toast.error(`Error: ${err instanceof Error ? err.message : String(err)}`); }
     finally { setSavingEdit(false); }
   };
 
