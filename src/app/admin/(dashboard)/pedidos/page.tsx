@@ -108,11 +108,11 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const confirmPromo = (modal: typeof PROMOS[0], sel: Product[], setItems: (f: FormItem[]) => void, afterConfirm: () => void) => {
+  const confirmPromo = (modal: typeof PROMOS[0], sel: Product[], setItems: React.Dispatch<React.SetStateAction<FormItem[]>>, afterConfirm: () => void) => {
     if (sel.length !== modal.qty) return;
     const names = sel.map((p) => p.name).join(", ");
     const item: FormItem = { productId: `${modal.id}-${Date.now()}`, name: `${modal.label} — ${names}`, quantity: 1, unitPrice: modal.price };
-    setItems((prev: FormItem[]) => [...prev, item]);
+    setItems((prev) => [...prev, item]);
     afterConfirm();
   };
 
