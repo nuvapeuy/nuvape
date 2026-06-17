@@ -20,7 +20,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         const isPromo = !item.productId || item.productId.startsWith("promo-");
         return {
           orderId: id,
-          productId: isPromo ? null : item.productId,
+          productId: isPromo ? null : (item.productId ?? null),
           productName: item.productName ?? null,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
