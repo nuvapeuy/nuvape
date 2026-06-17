@@ -289,27 +289,39 @@ export default function AdminOrdersPage() {
                     <p className="text-xs text-muted-foreground">{o.customer.phone}</p>
                     <p className="text-xs text-muted-foreground">{o.customer.address}{o.customer.address && ", "}{o.customer.city}</p>
                   </TableCell>
-                  <TableCell className="text-xs" style={{ maxWidth: 220 }}>
-                    <div className="flex flex-col gap-1">
-                      {(expanded ? o.items : o.items.slice(0, 1)).map((i, idx) => {
+                  <TableCell className="text-xs w-48">
+                    <div className="flex flex-col gap-1 w-48">
+                      {o.items.map((i, idx) => {
                         const full = itemDisplayName(i);
                         const dashIdx = full.indexOf(" — ");
                         const title = dashIdx >= 0 ? full.slice(0, dashIdx) : full;
-                        const flavors = dashIdx >= 0 ? full.slice(dashIdx + 3) : null;
+                        const flavors = dashIdx >= 0 ? full.slice(dashIdx + 3).split(", ") : null;
+                        const itemExpanded = expanded;
+                        if (!itemExpanded && idx > 0) return null;
                         return (
                           <div key={idx}>
-                            <span className="text-white font-medium">{i.quantity}x {title}</span>
+                            <span className="text-white font-medium block">{i.quantity}x {title}</span>
                             {flavors && (
-                              <p className="text-muted-foreground leading-snug mt-0.5">{flavors}</p>
+                              <>
+                                {itemExpanded
+                                  ? <ul className="mt-1 space-y-0.5">{flavors.map((f, fi) => <li key={fi} className="text-muted-foreground">· {f}</li>)}</ul>
+                                  : <button onClick={() => toggleExpand(o.id)} className="text-[var(--neon-purple)] hover:underline flex items-center gap-0.5 mt-0.5">
+                                      <ChevronRight className="h-3 w-3" /> ver sabores
+                                    </button>
+                                }
+                              </>
                             )}
                           </div>
                         );
                       })}
-                      {o.items.length > 1 && (
-                        <button onClick={() => toggleExpand(o.id)} className="inline-flex items-center gap-0.5 text-[var(--neon-purple)] hover:underline w-fit">
-                          {expanded
-                            ? <><ChevronDown className="h-3 w-3" /> ocultar</>
-                            : <><ChevronRight className="h-3 w-3" /> +{o.items.length - 1} más</>}
+                      {expanded && (
+                        <button onClick={() => toggleExpand(o.id)} className="text-[var(--neon-purple)] hover:underline flex items-center gap-0.5">
+                          <ChevronDown className="h-3 w-3" /> ocultar
+                        </button>
+                      )}
+                      {!expanded && o.items.length > 1 && (
+                        <button onClick={() => toggleExpand(o.id)} className="text-[var(--neon-purple)] hover:underline flex items-center gap-0.5">
+                          <ChevronRight className="h-3 w-3" /> +{o.items.length - 1} más
                         </button>
                       )}
                     </div>
