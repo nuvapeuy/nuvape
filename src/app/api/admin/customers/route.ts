@@ -5,28 +5,52 @@ export async function GET() {
   try {
     const customers = await prisma.customer.findMany({
       include: {
-        orders: { select: { total: true, status: true, createdAt: true } },
+        orders: {
+          select: {
+            id: true,
+            total: true,
+            status: true,
+            createdAt: true,
+            items: { select: { quantity: true, product: { select: { name: true } } } },
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
-    const ranking = customers
-      .map((c) => {
-        const orders = c.orders;
-        const totalSpent = orders
-          .filter((o) => o.status !== "CANCELLED")
-          .reduce((sum, o) => sum + Number(o.total), 0);
-        const lastOrder = orders.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )[0]?.createdAt ?? null;
-        return {
-          phone: c.phone,
-          name: `${c.firstName} ${c.lastName}`.trim(),
-          orderCount: orders.filter((o) => o.status !== "CANCELLED").length,
-          totalSpent,
-          lastOrder,
-        };
-      })
-      .sort((a, b) => b.totalSpent - a.totalSpent);
+    // Agrupar por telefono
+    const byPhone = new Map<string, typeof customers>();
+    for (const c of customers) {
+      const key = c.phone.replace(/\D/g, "");
+      if (!byPhone.has(key)) byPhone.set(key, []);
+      byPhone.get(key)!.push(c);
+    }
+
+    const ranking = Array.from(byPhone.entries()).map(([, group]) => {
+      const allOrders = group.flatMap((c) => c.orders);
+      const activeOrders = allOrders.filter((o) => o.status !== "CANCELLED");
+      const totalSpent = activeOrders.reduce((s, o) => s + Number(o.total), 0);
+      const sorted = [...allOrders].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      const name = `${group[0].firstName} ${group[0].lastName}`.trim();
+      return {
+        phone: group[0].phone,
+        name,
+        orderCount: activeOrders.length,
+        totalSpent,
+        lastOrder: sorted[0]?.createdAt ?? null,
+        orders: sorted.map((o) => ({
+          id: o.id,
+          status: o.status,
+          total: Number(o.total),
+          createdAt: o.createdAt,
+          items: o.items.map((i) => `${i.quantity}x ${i.product.name}`).join(", "),
+        })),
+      };
+    });
+
+    ranking.sort((a, b) => b.totalSpent - a.totalSpent);
 
     return NextResponse.json(ranking);
   } catch (err) {
