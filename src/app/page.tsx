@@ -52,8 +52,8 @@ export default async function Home() {
               VAPES PREMIUM
             </h1>
             <div className="mt-5 flex justify-center gap-6 lg:justify-start">
-              <Stat value="+50" label="Sabores" />
-              <Stat value="+15" label="Marcas" />
+              <Stat value="+5" label="Sabores" />
+              <Stat value="1" label="Marca" />
               <Stat value="24/7" label="Atención" />
             </div>
 
