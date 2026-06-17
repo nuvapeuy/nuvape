@@ -51,11 +51,16 @@ export async function POST(request: Request) {
           },
         },
         items: {
-          create: body.items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-          })),
+          create: body.items.map((item) => {
+            const isPromo = !item.productId || item.productId.startsWith("promo-");
+            return {
+              ...(isPromo
+                ? { productName: item.name }
+                : { productId: item.productId, productName: item.name }),
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+            };
+          }),
         },
       },
     });

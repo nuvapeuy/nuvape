@@ -14,7 +14,7 @@ type Order = {
   paymentMethod: string;
   deliveryType: string;
   customer: { firstName: string; lastName: string; phone: string; address: string; city: string };
-  items: { quantity: number; product: { name: string } }[];
+  items: { quantity: number; productName: string | null; product: { name: string } | null }[];
 };
 
 type Product = { id: string; name: string; price: number; stock: number };
@@ -237,7 +237,7 @@ export default function AdminOrdersPage() {
                   <p className="text-xs text-muted-foreground">{o.customer.phone}</p>
                   <p className="text-xs text-muted-foreground">{o.customer.address}{o.customer.address && ", "}{o.customer.city}</p>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{o.items.map((i) => `${i.quantity}x ${i.product.name}`).join(", ")}</TableCell>
+                <TableCell className="text-muted-foreground">{o.items.map((i) => `${i.quantity}x ${i.productName ?? i.product?.name ?? "?"}`).join(", ")}</TableCell>
                 <TableCell className="text-muted-foreground text-xs">{o.deliveryType === "DOMICILIO" ? "Domicilio" : "Interior"}</TableCell>
                 <TableCell className="text-muted-foreground text-xs">{o.paymentMethod === "CASH" ? "Efectivo" : "Transferencia"}</TableCell>
                 <TableCell className="text-white">${Number(o.total).toLocaleString("es-AR")}</TableCell>

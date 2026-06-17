@@ -6,7 +6,7 @@ export async function GET() {
     const orders = await prisma.order.findMany({
       include: {
         customer: true,
-        items: { include: { product: { select: { name: true, images: { take: 1 } } } } },
+        items: { select: { quantity: true, productName: true, product: { select: { name: true } } } },
       },
       orderBy: { createdAt: "desc" },
     });
