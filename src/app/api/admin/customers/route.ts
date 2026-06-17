@@ -45,7 +45,7 @@ export async function GET() {
           status: o.status,
           total: Number(o.total),
           createdAt: o.createdAt,
-          items: o.items.map((i) => `${i.quantity}x ${i.product.name}`).join(", "),
+          items: o.items.map((i) => `${i.quantity}x ${i.productName ?? i.product?.name ?? "?"}`).join(", "),
         })),
       };
     });
