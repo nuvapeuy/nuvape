@@ -10,10 +10,39 @@ type ItemInput = {
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const body = (await request.json()) as { status?: string; items?: ItemInput[]; subtotal?: number; shippingCost?: number; total?: number };
+  const body = (await request.json()) as {
+    status?: string;
+    deliveryType?: string;
+    paymentMethod?: string;
+    items?: ItemInput[];
+    subtotal?: number;
+    shippingCost?: number;
+    total?: number;
+  };
 
-  // Edicion de items
+  // Edicion de items / entrega / pago
   if (body.items) {
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+    if (!order) return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
+
+    // Si el pedido ya fue entregado, revertir stock de los items anteriores
+    if (order.status === "DELIVERED") {
+      await Promise.all(
+        order.items
+          .filter((i) => i.productId)
+          .map((i) =>
+            prisma.product.update({
+              where: { id: i.productId! },
+              data: { stock: { increment: i.quantity } },
+            })
+          )
+      );
+    }
+
+    // Reemplazar items
     await prisma.orderItem.deleteMany({ where: { orderId: id } });
     await prisma.orderItem.createMany({
       data: body.items.map((item) => {
@@ -27,14 +56,32 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         };
       }),
     });
+
+    // Si era entregado, descontar stock de los nuevos items
+    if (order.status === "DELIVERED") {
+      await Promise.all(
+        body.items
+          .filter((i) => i.productId && !i.productId.startsWith("promo-"))
+          .map((i) =>
+            prisma.product.update({
+              where: { id: i.productId! },
+              data: { stock: { decrement: i.quantity } },
+            })
+          )
+      );
+    }
+
     await prisma.order.update({
       where: { id },
       data: {
         ...(body.subtotal != null && { subtotal: body.subtotal }),
         ...(body.shippingCost != null && { shippingCost: body.shippingCost }),
         ...(body.total != null && { total: body.total }),
+        ...(body.deliveryType && { deliveryType: body.deliveryType as never }),
+        ...(body.paymentMethod && { paymentMethod: body.paymentMethod as never }),
       },
     });
+
     return NextResponse.json({ ok: true });
   }
 
