@@ -1,0 +1,67 @@
+
+> nuvape@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.25.96.1:3000
+- Environments: .env
+✓ Ready in 422ms
+
+ GET / 200 in 558ms (next.js: 235ms, application-code: 322ms)
+  Reload env: .env
+ GET /catalogo 200 in 1758ms (next.js: 517ms, application-code: 1241ms)
+[browser] Image with src "/uploads/frost-dragon-15k.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "/uploads/neon-blast-20k.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "/uploads/mango-tango-10k.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "/uploads/cola-rush-9k.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "/uploads/grape-storm-12k.png" has "fill" but is missing "sizes" prop. Please add it to improve page performance. Read more: https://nextjs.org/docs/api-reference/next/image#sizes
+[browser] Image with src "/uploads/neon-blast-20k.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+  Reload env: .env
+✓ Compiled in 468ms
+ GET /catalogo 200 in 674ms (next.js: 223ms, application-code: 451ms)
+ GET /catalogo 200 in 266ms (next.js: 76ms, application-code: 190ms)
+ GET /catalogo 200 in 139ms (next.js: 29ms, application-code: 111ms)
+ GET /catalogo 200 in 142ms (next.js: 6ms, application-code: 135ms)
+ GET /catalogo 200 in 140ms (next.js: 49ms, application-code: 91ms)
+ GET /catalogo 200 in 140ms (next.js: 70ms, application-code: 71ms)
+ GET /catalogo 200 in 42ms (next.js: 9ms, application-code: 34ms)
+[browser] Image with src "/uploads/frost-dragon-15k.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
+✓ Compiled in 499ms
+[browser] Encountered two children with the same key, `ULTIMAS_UNIDADES`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+    at Set.forEach (<anonymous>) (<anonymous>)
+[browser] Encountered two children with the same key, `AGOTADO`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+    at Set.forEach (<anonymous>) (<anonymous>)
+[browser] Encountered two children with the same key, `QUEDAN_POCAS`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+    at Set.forEach (<anonymous>) (<anonymous>)
+ GET /catalogo 200 in 1029ms (next.js: 735ms, application-code: 293ms)
+ GET /catalogo 200 in 109ms (next.js: 9ms, application-code: 100ms)
+[browser] Encountered two children with the same key, `ULTIMAS_UNIDADES`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `AGOTADO`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `QUEDAN_POCAS`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+✓ Compiled in 728ms
+[browser] Encountered two children with the same key, `ULTIMAS_UNIDADES`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+    at Set.forEach (<anonymous>) (<anonymous>)
+[browser] Encountered two children with the same key, `AGOTADO`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+    at Set.forEach (<anonymous>) (<anonymous>)
+[browser] Encountered two children with the same key, `QUEDAN_POCAS`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+    at Set.forEach (<anonymous>) (<anonymous>)
+ GET /catalogo 200 in 190ms (next.js: 98ms, application-code: 92ms)
+ GET /catalogo 200 in 32ms (next.js: 5ms, application-code: 26ms)
+[browser] Encountered two children with the same key, `ULTIMAS_UNIDADES`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `AGOTADO`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `QUEDAN_POCAS`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+✓ Compiled in 456ms
+ GET /catalogo 200 in 317ms (next.js: 159ms, application-code: 158ms)
+ GET /catalogo 200 in 79ms (next.js: 12ms, application-code: 67ms)
+[browser] Encountered two children with the same key, `ULTIMAS_UNIDADES`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+    at Set.forEach (<anonymous>) (<anonymous>)
+[browser] Encountered two children with the same key, `AGOTADO`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+    at Set.forEach (<anonymous>) (<anonymous>)
+[browser] Encountered two children with the same key, `QUEDAN_POCAS`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+    at Set.forEach (<anonymous>) (<anonymous>)
+[browser] Encountered two children with the same key, `ULTIMAS_UNIDADES`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `AGOTADO`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[browser] Encountered two children with the same key, `QUEDAN_POCAS`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 

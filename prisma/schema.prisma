@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AdminRole {
+  ADMIN
+  OPERATOR
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+}
+
+enum DeliveryType {
+  DOMICILIO
+  INTERIOR_DAC
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         AdminRole @default(OPERATOR)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  logoUrl   String?
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Flag {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  label     String
+  color     String        @default("#a855f7")
+  icon      String?
+  priority  Int           @default(0)
+  animated  Boolean       @default(false)
+  active    Boolean       @default(true)
+  products  ProductFlag[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model ProductFlag {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  flag      Flag     @relation(fields: [flagId], references: [id], onDelete: Cascade)
+  flagId    String
+  createdAt DateTime @default(now())
+
+  @@unique([productId, flagId])
+}
+
+model Flavor {
+  id       String          @id @default(cuid())
+  name     String          @unique
+  products ProductFlavor[]
+}
+
+model ProductFlavor {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  flavor    Flavor   @relation(fields: [flavorId], references: [id], onDelete: Cascade)
+  flavorId  String
+
+  @@unique([productId, flavorId])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  url       String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id              String          @id @default(cuid())
+  name            String
+  slug            String          @unique
+  description     String
+  price           Decimal         @db.Decimal(10, 2)
+  puffs           Int
+  nicotineLevel   Decimal         @db.Decimal(4, 1)
+  stock           Int             @default(0)
+  active          Boolean         @default(true)
+  brand           Brand           @relation(fields: [brandId], references: [id])
+  brandId         String
+  images          ProductImage[]
+  flags           ProductFlag[]
+  flavors         ProductFlavor[]
+  orderItems      OrderItem[]
+  metaTitle        String?
+  metaDescription  String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([brandId])
+}
+
+model Promotion {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  discountPct Decimal? @db.Decimal(5, 2)
+  startsAt    DateTime
+  endsAt      DateTime
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  imageUrl  String
+  linkUrl   String?
+  position  Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSettings {
+  id       String  @id @default(cuid())
+  logoUrl  String?
+  whatsapp String?
+  brandName String @default("NUVAPE")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  phone     String
+  email     String
+  address   String
+  city      String
+  orders    Order[]
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  customerId    String
+  items         OrderItem[]
+  subtotal      Decimal       @db.Decimal(10, 2)
+  shippingCost  Decimal       @db.Decimal(10, 2) @default(0)
+  total         Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @default(CASH)
+  deliveryType  DeliveryType  @default(DOMICILIO)
+  status        OrderStatus   @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10, 2)
+}
