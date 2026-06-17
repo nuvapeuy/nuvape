@@ -17,7 +17,7 @@ const WHATSAPP_NUMBER = "59892052416";
 type DeliveryType = "DOMICILIO" | "INTERIOR_DAC" | "MEETING_POINT";
 type PaymentMethod = "CASH" | "BANK_TRANSFER";
 
-const MEETING_POINTS = ["PORTONES SHOPPING", "NUEVO CENTRO SHOPPING"];
+const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping"];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -154,7 +154,7 @@ export default function CheckoutPage() {
               />
               <DeliveryOption
                 icon={Package}
-                title="Envío al interior / DAC"
+                title="Envío al interior"
                 description="Pagás el envío al recibir tu pedido"
                 active={deliveryType === "INTERIOR_DAC"}
                 onClick={() => setDeliveryType("INTERIOR_DAC")}
