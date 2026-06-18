@@ -15,6 +15,7 @@ type Product = {
   price: number;
   stock: number;
   flags: string[];
+  categories: string[];
 };
 
 type Brand = { id: string; name: string };
@@ -43,6 +44,9 @@ export default function AdminProductsPage() {
   const [flags, setFlags] = useState<Flag[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
+  const [editCatProduct, setEditCatProduct] = useState<Product | null>(null);
+  const [editCatSelected, setEditCatSelected] = useState<string[]>([]);
+  const [savingCat, setSavingCat] = useState(false);
 
   const load = () => {
     fetch("/api/admin/products")
@@ -113,6 +117,29 @@ export default function AdminProductsPage() {
         ? f.flagNames.filter((n) => n !== name)
         : [...f.flagNames, name],
     }));
+  };
+
+  const openEditCategories = (p: Product) => {
+    setEditCatProduct(p);
+    setEditCatSelected([...p.categories]);
+  };
+
+  const saveCategories = async () => {
+    if (!editCatProduct) return;
+    setSavingCat(true);
+    const res = await fetch(`/api/admin/products/${editCatProduct.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categoryNames: editCatSelected }),
+    });
+    setSavingCat(false);
+    if (res.ok) {
+      toast.success("Categorías actualizadas.");
+      setEditCatProduct(null);
+      load();
+    } else {
+      toast.error("Error al guardar.");
+    }
   };
 
   const toggleCategory = (name: string) => {
@@ -293,6 +320,41 @@ export default function AdminProductsPage() {
         </div>
       )}
 
+      {editCatProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-xl border border-white/10 bg-[#111] p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-white">Categorías — {editCatProduct.name}</h2>
+              <button onClick={() => setEditCatProduct(null)} className="text-muted-foreground hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3">
+              {categories.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editCatSelected.includes(c.name)}
+                    onChange={() => setEditCatSelected((prev) =>
+                      prev.includes(c.name) ? prev.filter((n) => n !== c.name) : [...prev, c.name]
+                    )}
+                    className="h-4 w-4 accent-[var(--neon-purple)]"
+                  />
+                  <span className="text-sm text-white">{c.name}</span>
+                </label>
+              ))}
+            </div>
+            <button
+              onClick={saveCategories}
+              disabled={savingCat}
+              className="mt-5 w-full rounded-lg bg-[var(--neon-purple)] py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {savingCat ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 glass rounded-xl">
         <Table>
           <TableHeader>
@@ -301,13 +363,14 @@ export default function AdminProductsPage() {
               <TableHead>Marca</TableHead>
               <TableHead>Precio</TableHead>
               <TableHead>Etiquetas</TableHead>
+              <TableHead>Categorías</TableHead>
               <TableHead>Stock</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products === null && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">Cargando...</TableCell>
+                <TableCell colSpan={6} className="text-center text-muted-foreground">Cargando...</TableCell>
               </TableRow>
             )}
             {products?.map((p) => (
@@ -318,6 +381,16 @@ export default function AdminProductsPage() {
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {p.flags.map((f) => <FlagPill key={f} flag={f} />)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {p.categories.length > 0 ? p.categories.join(", ") : <span className="italic opacity-50">Sin categoría</span>}
+                    </span>
+                    <button onClick={() => openEditCategories(p)} className="text-muted-foreground hover:text-white">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -354,7 +427,7 @@ export default function AdminProductsPage() {
             ))}
             {products?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">No hay productos.</TableCell>
+                <TableCell colSpan={6} className="text-center text-muted-foreground">No hay productos.</TableCell>
               </TableRow>
             )}
           </TableBody>
