@@ -68,6 +68,7 @@ export default function AdminOrdersPage() {
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [editForm, setEditForm] = useState({ deliveryType: "DOMICILIO", paymentMethod: "CASH" });
   const [editItems, setEditItems] = useState<FormItem[]>([]);
+  const [editOriginalItems, setEditOriginalItems] = useState<FormItem[]>([]);
   const [editPromoModal, setEditPromoModal] = useState<typeof PROMOS[0] | null>(null);
   const [editPromoSelected, setEditPromoSelected] = useState<Product[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -82,8 +83,17 @@ export default function AdminOrdersPage() {
   }, []);
 
   // ── helpers ───────────────────────────────────────────────
-  const addItem = (items: FormItem[], setItems: (f: FormItem[]) => void, p: Product) => {
+  // originalItems: si se está editando un pedido DELIVERED, las unidades originales ya están
+  // descontadas del stock en la DB, así que hay que sumarlas para calcular el disponible real.
+  const addItem = (items: FormItem[], setItems: (f: FormItem[]) => void, p: Product, originalItems?: FormItem[]) => {
     const exists = items.find((i) => i.productId === p.id);
+    const currentQty = exists?.quantity ?? 0;
+    const originalQty = originalItems?.find((i) => i.productId === p.id)?.quantity ?? 0;
+    const availableStock = p.stock + originalQty;
+    if (currentQty >= availableStock) {
+      toast.error(`Stock insuficiente: solo hay ${availableStock} unidades de ${p.name}.`);
+      return;
+    }
     if (exists) setItems(items.map((i) => i.productId === p.id ? { ...i, quantity: i.quantity + 1 } : i));
     else setItems([...items, { productId: p.id, name: p.name, quantity: 1, unitPrice: p.price }]);
   };
@@ -101,8 +111,14 @@ export default function AdminOrdersPage() {
 
   // ── promo picker nuevo pedido ─────────────────────────────
   const togglePromo = (sel: Product[], setSel: (v: Product[]) => void, max: number, p: Product) => {
-    if (sel.length < max) setSel([...sel, p]);
-    else {
+    const countInSel = sel.filter((x) => x.id === p.id).length;
+    if (sel.length < max) {
+      if (countInSel >= p.stock) {
+        toast.error(`Stock insuficiente: solo hay ${p.stock} unidades de ${p.name}.`);
+        return;
+      }
+      setSel([...sel, p]);
+    } else {
       const idx = sel.map((x) => x.id).lastIndexOf(p.id);
       if (idx >= 0) setSel(sel.filter((_, i) => i !== idx));
     }
@@ -155,12 +171,16 @@ export default function AdminOrdersPage() {
   const openEdit = (o: Order) => {
     setEditOrder(o);
     setEditForm({ deliveryType: o.deliveryType, paymentMethod: o.paymentMethod });
-    setEditItems(o.items.map((i) => ({
+    const mapped = o.items.map((i) => ({
       productId: i.productId ?? `promo-exist-${Math.random()}`,
       name: itemDisplayName(i),
       quantity: i.quantity,
       unitPrice: Number(i.unitPrice),
-    })));
+    }));
+    setEditItems(mapped);
+    // Si el pedido fue entregado, el stock de esos productos ya está descontado en la DB.
+    // Guardamos los originales para que addItem pueda sumarlos al stock disponible.
+    setEditOriginalItems(o.status === "DELIVERED" ? mapped : []);
   };
 
   // ── guardar edicion ───────────────────────────────────────
@@ -252,7 +272,7 @@ export default function AdminOrdersPage() {
               </select>
             </div>
           </div>
-          <ProductPicker products={products} items={editItems} onAddProduct={(p) => addItem(editItems, setEditItems, p)} onOpenPromo={(p) => { setEditPromoModal(p); setEditPromoSelected([]); }} />
+          <ProductPicker products={products} items={editItems} onAddProduct={(p) => addItem(editItems, setEditItems, p, editOriginalItems)} onOpenPromo={(p) => { setEditPromoModal(p); setEditPromoSelected([]); }} originalItems={editOriginalItems} />
           <ItemsSummary items={editItems} deliveryType={editForm.deliveryType} onRemove={(id) => removeItem(editItems, setEditItems, id)} />
           <button onClick={saveEdit} disabled={savingEdit || editItems.length === 0} className="mt-2 w-full rounded-lg bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white disabled:opacity-40">
             {savingEdit ? "Guardando..." : "Guardar cambios"}
@@ -429,11 +449,12 @@ function FormFields({ form, setForm }: { form: FormState; setForm: (f: FormState
   );
 }
 
-function ProductPicker({ products, items, onAddProduct, onOpenPromo }: {
+function ProductPicker({ products, items, onAddProduct, onOpenPromo, originalItems = [] }: {
   products: Product[];
   items: FormItem[];
   onAddProduct: (p: Product) => void;
   onOpenPromo: (p: typeof PROMOS[0]) => void;
+  originalItems?: FormItem[];
 }) {
   return (
     <div>
@@ -449,12 +470,22 @@ function ProductPicker({ products, items, onAddProduct, onOpenPromo }: {
         <p className="text-[10px] text-muted-foreground uppercase tracking-wide px-1 pt-2">Productos</p>
         {products.map((p) => {
           const inCart = items.find((i) => i.productId === p.id);
+          const originalQty = originalItems.find((i) => i.productId === p.id)?.quantity ?? 0;
+          const availableStock = p.stock + originalQty;
+          const atLimit = (inCart?.quantity ?? 0) >= availableStock;
           return (
-            <button key={p.id} onClick={() => onAddProduct(p)} className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-left hover:bg-white/5">
+            <button
+              key={p.id}
+              onClick={() => onAddProduct(p)}
+              disabled={atLimit}
+              className="flex items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-left hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
               <span className="text-sm text-white">{p.name}</span>
               <div className="flex items-center gap-2">
                 {inCart && <span className="text-xs text-[var(--neon-purple)] font-semibold">x{inCart.quantity}</span>}
-                <span className="text-xs text-muted-foreground">${p.price.toLocaleString("es-AR")}</span>
+                <span className="text-xs text-muted-foreground">
+                  ${p.price.toLocaleString("es-AR")} · {availableStock} en stock
+                </span>
               </div>
             </button>
           );
