@@ -148,7 +148,7 @@ export default function AdminProductsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-muted-foreground">Precio (ARS) *</label>
+                  <label className="text-xs text-muted-foreground">Precio (UYU) *</label>
                   <Input type="number" min={0} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="1150" className="mt-1" />
                 </div>
                 <div>
