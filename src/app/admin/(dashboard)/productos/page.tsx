@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FlagPill } from "@/components/flag-pill";
-import { Pencil, X, Plus } from "lucide-react";
+import { Pencil, X, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Product = {
@@ -46,6 +46,11 @@ export default function AdminProductsPage() {
   const [editCatProduct, setEditCatProduct] = useState<Product | null>(null);
   const [editCatSelected, setEditCatSelected] = useState<string[]>([]);
   const [savingCat, setSavingCat] = useState(false);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = () => {
     fetch("/api/admin/products")
@@ -101,6 +106,54 @@ export default function AdminProductsPage() {
         ? f.flagNames.filter((n) => n !== name)
         : [...f.flagNames, name],
     }));
+  };
+
+  const openEdit = (p: Product) => {
+    setEditProduct(p);
+    setEditForm({
+      name: p.name,
+      description: "",
+      price: String(p.price),
+      stock: String(p.stock),
+      puffs: "",
+      nicotineLevel: "",
+      brandId: p.brandId,
+      imageUrls: [""],
+      flagNames: [...p.flags],
+      categoryNames: [...p.categories],
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editProduct) return;
+    setSavingEdit(true);
+    const res = await fetch(`/api/admin/products/${editProduct.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: editForm.name,
+        description: editForm.description || undefined,
+        price: editForm.price ? Number(editForm.price) : undefined,
+        puffs: editForm.puffs ? Number(editForm.puffs) : undefined,
+        nicotineLevel: editForm.nicotineLevel ? Number(editForm.nicotineLevel) : undefined,
+        brandId: editForm.brandId || undefined,
+        imageUrls: editForm.imageUrls.filter(Boolean).length > 0 ? editForm.imageUrls.filter(Boolean) : undefined,
+        flagNames: editForm.flagNames,
+        categoryNames: editForm.categoryNames,
+      }),
+    });
+    setSavingEdit(false);
+    if (res.ok) { toast.success("Producto actualizado."); setEditProduct(null); load(); }
+    else toast.error("Error al guardar.");
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteProduct) return;
+    setDeleting(true);
+    const res = await fetch(`/api/admin/products/${deleteProduct.id}`, { method: "DELETE" });
+    setDeleting(false);
+    if (res.ok) { toast.success("Producto eliminado."); setDeleteProduct(null); load(); }
+    else toast.error("Error al eliminar.");
   };
 
   const openEditCategories = (p: Product) => {
@@ -339,6 +392,112 @@ export default function AdminProductsPage() {
         </div>
       )}
 
+      {/* Modal editar producto */}
+      {editProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-lg rounded-xl border border-white/10 bg-[#111] p-6 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white">Editar — {editProduct.name}</h2>
+              <button onClick={() => setEditProduct(null)} className="text-muted-foreground hover:text-white"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Nombre</label>
+                <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Descripción</label>
+                <Input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} placeholder="Dejar vacío para no cambiar" className="mt-1" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Precio (UYU)</label>
+                  <Input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} className="mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Puffs</label>
+                  <Input type="number" value={editForm.puffs} onChange={(e) => setEditForm({ ...editForm, puffs: e.target.value })} placeholder="Dejar vacío para no cambiar" className="mt-1" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Nicotina (mg)</label>
+                  <Input type="number" step="0.1" value={editForm.nicotineLevel} onChange={(e) => setEditForm({ ...editForm, nicotineLevel: e.target.value })} placeholder="Dejar vacío para no cambiar" className="mt-1" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Marca</label>
+                  <select value={editForm.brandId} onChange={(e) => setEditForm({ ...editForm, brandId: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-white/10 bg-[#1a1a1a] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[var(--neon-purple)]">
+                    <option value="">Sin cambiar</option>
+                    {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Imágenes (dejar vacío para no cambiar)</label>
+                <div className="mt-1 flex flex-col gap-2">
+                  {editForm.imageUrls.map((url, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input value={url} onChange={(e) => { const u = [...editForm.imageUrls]; u[i] = e.target.value; setEditForm({ ...editForm, imageUrls: u }); }} placeholder="/products/Imagen.png" />
+                      {url && <img src={url} alt="" className="h-10 w-10 shrink-0 rounded object-contain border border-white/10" />}
+                      {i > 0 && <button type="button" onClick={() => setEditForm({ ...editForm, imageUrls: editForm.imageUrls.filter((_, j) => j !== i) })} className="text-muted-foreground hover:text-red-400"><X className="h-4 w-4" /></button>}
+                    </div>
+                  ))}
+                  {editForm.imageUrls.length < 5 && (
+                    <button type="button" onClick={() => setEditForm({ ...editForm, imageUrls: [...editForm.imageUrls, ""] })} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-white">
+                      <Plus className="h-3.5 w-3.5" /> Agregar imagen
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Categorías</label>
+                <div className="mt-2 flex flex-col gap-2">
+                  {categories.map((c) => (
+                    <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={editForm.categoryNames.includes(c.name)}
+                        onChange={() => setEditForm((f) => ({ ...f, categoryNames: f.categoryNames.includes(c.name) ? f.categoryNames.filter((n) => n !== c.name) : [...f.categoryNames, c.name] }))}
+                        className="h-4 w-4 accent-[var(--neon-purple)]" />
+                      <span className="text-sm text-white">{c.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Etiquetas</label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {flags.map((f) => (
+                    <button key={f.id} type="button" onClick={() => setEditForm((ef) => ({ ...ef, flagNames: ef.flagNames.includes(f.name) ? ef.flagNames.filter((n) => n !== f.name) : [...ef.flagNames, f.name] }))}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${editForm.flagNames.includes(f.name) ? "border-[var(--neon-purple)] bg-[var(--neon-purple)]/20 text-white" : "border-white/10 text-muted-foreground hover:border-white/30"}`}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button onClick={saveEdit} disabled={savingEdit} className="mt-2 w-full rounded-lg bg-[var(--neon-purple)] py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
+                {savingEdit ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmar eliminación */}
+      {deleteProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-xl border border-white/10 bg-[#111] p-6">
+            <h2 className="text-lg font-bold text-white mb-2">Eliminar producto</h2>
+            <p className="text-sm text-muted-foreground mb-6">¿Seguro que querés eliminar <span className="text-white font-medium">{deleteProduct.name}</span>? Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteProduct(null)} className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-muted-foreground hover:text-white">Cancelar</button>
+              <button onClick={confirmDelete} disabled={deleting} className="flex-1 rounded-lg bg-red-500 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50">
+                {deleting ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 glass rounded-xl">
         <Table>
           <TableHeader>
@@ -348,6 +507,7 @@ export default function AdminProductsPage() {
               <TableHead>Precio</TableHead>
               <TableHead>Etiquetas</TableHead>
               <TableHead>Categorías</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -373,6 +533,16 @@ export default function AdminProductsPage() {
                     </span>
                     <button onClick={() => openEditCategories(p)} className="text-muted-foreground hover:text-white">
                       <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => openEdit(p)} className="text-muted-foreground hover:text-white" title="Editar">
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => setDeleteProduct(p)} className="text-muted-foreground hover:text-red-400" title="Eliminar">
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </TableCell>
