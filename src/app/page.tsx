@@ -11,15 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 const WHATSAPP_NUMBER = "59892052416";
-const HERO_PRODUCT = {
-  name: "Miami Mint 40K",
-  brand: "ELFBAR",
-  price: 1150,
-  puffs: 40000,
-  flags: ["HOT"] as string[],
-  imageUrl: "/products/MiamiMINT_v2.png",
-  slug: "miami-mint-40k",
-};
+const HERO_SLUG = "miami-mint-40k";
 
 const CATEGORY_EMOJI: Record<string, string> = {
   Mentolados: "❄️",
@@ -36,7 +28,7 @@ export default async function Home() {
     getAllCategories(),
     prisma.banner.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
   ]);
-  const hero = HERO_PRODUCT;
+  const hero = allProducts.find((p) => p.slug === HERO_SLUG) ?? allProducts[0];
 
   const bestSellers = allProducts.filter((p) => p.flags.includes("HOT"));
   const CATEGORY_ORDER = ["Mentolados", "Frutales", "Cítricos", "Dulces"];
