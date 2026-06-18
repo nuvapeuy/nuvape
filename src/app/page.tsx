@@ -6,7 +6,7 @@ import { FlagPill } from "@/components/flag-pill";
 import { ProductRow } from "@/components/product-row";
 import { TrustSection } from "@/components/trust-section";
 import { BrandsStrip } from "@/components/brands-strip";
-import { getProducts } from "@/lib/products";
+import { getProducts, getAllCategories } from "@/lib/products";
 import { cn } from "@/lib/utils";
 
 const WHATSAPP_NUMBER = "59892052416";
@@ -20,15 +20,25 @@ const HERO_PRODUCT = {
   slug: "miami-mint-40k",
 };
 
+const CATEGORY_EMOJI: Record<string, string> = {
+  Mentolados: "❄️",
+  Frutales: "🍓",
+  Cítricos: "🍋",
+  Dulces: "🍬",
+};
+
 export default async function Home() {
-  const allProducts = await getProducts();
+  const [allProducts, allCategories] = await Promise.all([getProducts(), getAllCategories()]);
   const hero = HERO_PRODUCT;
 
   const bestSellers = allProducts.filter((p) => p.flags.includes("HOT"));
-  const menthols = allProducts.filter((p) => p.flavors.some((f) => /mint/i.test(f)));
-  const fruity = allProducts.filter((p) =>
-    p.flavors.some((f) => /mango|grape|watermelon|razz|peach/i.test(f))
-  );
+  const categoryRows = allCategories
+    .map((c) => ({
+      name: c.name,
+      emoji: CATEGORY_EMOJI[c.name] ?? "📦",
+      products: allProducts.filter((p) => p.categories.includes(c.name)),
+    }))
+    .filter((r) => r.products.length > 0);
 
   return (
     <div>
@@ -103,8 +113,9 @@ export default async function Home() {
 
       <div className="pt-14">
         <ProductRow emoji="🔥" title="Más vendidos" products={bestSellers} />
-        <ProductRow emoji="❄️" title="Mentolados" products={menthols} />
-        <ProductRow emoji="🍓" title="Frutales" products={fruity} />
+        {categoryRows.map((r) => (
+          <ProductRow key={r.name} emoji={r.emoji} title={r.name} products={r.products} />
+        ))}
       </div>
 
       <TrustSection />
