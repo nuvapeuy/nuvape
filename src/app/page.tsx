@@ -28,6 +28,8 @@ const CATEGORY_EMOJI: Record<string, string> = {
   Dulces: "🍬",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const [allProducts, allCategories, banners] = await Promise.all([
     getProducts(),
