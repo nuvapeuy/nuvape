@@ -527,14 +527,9 @@ export default function AdminProductsPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {p.categories.length > 0 ? p.categories.join(", ") : <span className="italic opacity-50">Sin categoría</span>}
-                    </span>
-                    <button onClick={() => openEditCategories(p)} className="text-muted-foreground hover:text-white">
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {p.categories.length > 0 ? p.categories.join(", ") : <span className="italic opacity-50">Sin categoría</span>}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
