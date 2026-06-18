@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+
+export const dynamic = "force-dynamic";
 import { getProducts, getAllCategories } from "@/lib/products";
 import CatalogoClient from "./catalogo-client";
 
