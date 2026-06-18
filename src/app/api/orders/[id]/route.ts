@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyLowStockByWhatsApp } from "@/lib/whatsapp-notify";
 
+// Estados donde el stock ya fue descontado
+const STOCK_DECREMENTED_STATUSES = ["CONFIRMED", "PREPARING", "SHIPPED", "DELIVERED"];
+
 async function checkAndNotifyLowStock(productIds: string[]) {
   if (productIds.length === 0) return;
   const products = await prisma.product.findMany({
@@ -56,10 +59,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       });
       if (!order) return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
 
-      const isDelivered = order.status === "DELIVERED";
+      const stockAlreadyDecremented = STOCK_DECREMENTED_STATUSES.includes(order.status);
 
-      // Revertir stock de items anteriores si ya fue entregado
-      if (isDelivered) {
+      // Revertir stock si ya estaba descontado
+      if (stockAlreadyDecremented) {
         for (const i of order.items) {
           if (isRealProduct(i.productId)) {
             await prisma.product.update({
@@ -82,8 +85,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         })),
       });
 
-      // Descontar stock de nuevos items si ya fue entregado
-      if (isDelivered) {
+      // Re-descontar stock con los nuevos items
+      if (stockAlreadyDecremented) {
         const affectedIds: string[] = [];
         for (const item of body.items) {
           if (isRealProduct(item.productId)) {
@@ -117,13 +120,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!status) return NextResponse.json({ error: "Falta status o items" }, { status: 400 });
 
   try {
-    const order = await prisma.order.update({
+    const order = await prisma.order.findUnique({
       where: { id },
-      data: { status: status as never },
       include: { items: true },
     });
+    if (!order) return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
 
-    if (status === "DELIVERED") {
+    const wasDecremented = STOCK_DECREMENTED_STATUSES.includes(order.status);
+    const willBeDecremented = STOCK_DECREMENTED_STATUSES.includes(status);
+
+    // PENDING → CONFIRMED: descontar stock
+    if (!wasDecremented && willBeDecremented) {
       const affectedIds: string[] = [];
       for (const item of order.items) {
         if (isRealProduct(item.productId)) {
@@ -133,6 +140,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
       await checkAndNotifyLowStock(affectedIds);
     }
+
+    // Cualquier estado → CANCELLED: devolver stock si ya estaba descontado
+    if (status === "CANCELLED" && wasDecremented) {
+      for (const item of order.items) {
+        if (isRealProduct(item.productId)) {
+          await prisma.product.update({
+            where: { id: item.productId! },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
+    }
+
+    await prisma.order.update({
+      where: { id },
+      data: { status: status as never },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

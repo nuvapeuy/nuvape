@@ -180,7 +180,8 @@ export default function AdminOrdersPage() {
     setEditItems(mapped);
     // Si el pedido fue entregado, el stock de esos productos ya está descontado en la DB.
     // Guardamos los originales para que addItem pueda sumarlos al stock disponible.
-    setEditOriginalItems(o.status === "DELIVERED" ? mapped : []);
+    const stockDecremented = ["CONFIRMED", "PREPARING", "SHIPPED", "DELIVERED"].includes(o.status);
+    setEditOriginalItems(stockDecremented ? mapped : []);
   };
 
   // ── guardar edicion ───────────────────────────────────────
