@@ -37,7 +37,11 @@ export default async function Home() {
   const hero = HERO_PRODUCT;
 
   const bestSellers = allProducts.filter((p) => p.flags.includes("HOT"));
-  const categoryRows = allCategories.map((c) => ({
+  const CATEGORY_ORDER = ["Mentolados", "Frutales", "Cítricos", "Dulces"];
+  const sortedCategories = [...allCategories].sort(
+    (a, b) => CATEGORY_ORDER.indexOf(a.name) - CATEGORY_ORDER.indexOf(b.name)
+  );
+  const categoryRows = sortedCategories.map((c) => ({
     name: c.name,
     emoji: CATEGORY_EMOJI[c.name] ?? "📦",
     products: allProducts.filter((p) => p.categories.includes(c.name)),
@@ -143,8 +147,8 @@ export default async function Home() {
               <div className="mb-5 flex items-end justify-between">
                 <h2 className="text-xl font-bold text-white">{r.emoji} {r.name}</h2>
               </div>
-              <div className="flex items-center justify-center rounded-2xl border border-[#C9A84C]/20 bg-[#C9A84C]/5 py-12">
-                <p className="text-lg font-bold tracking-widest text-[#C9A84C]">PRÓXIMAMENTE</p>
+              <div className="flex items-center justify-center rounded-xl border border-[#C9A84C]/20 bg-[#C9A84C]/5 py-5">
+                <p className="text-xs font-bold tracking-widest text-[#C9A84C]">PRÓXIMAMENTE</p>
               </div>
             </section>
           )
