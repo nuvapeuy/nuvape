@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { FlagPill } from "@/components/flag-pill";
 import { stockFlags, type MockProduct } from "@/lib/mock-data";
@@ -15,6 +15,19 @@ export function ProductDetail({ product }: { product: MockProduct }) {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const addItem = useCartStore((s) => s.addItem);
+  const touchStartX = useRef<number | null>(null);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) < 40) return;
+    if (dx < 0) setActiveImage((i) => Math.min(i + 1, images.length - 1));
+    else setActiveImage((i) => Math.max(i - 1, 0));
+    touchStartX.current = null;
+  }
   const outOfStock = product.stock === 0;
   const allFlags = [...product.flags, ...stockFlags(product.stock)];
   const images = product.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : [];
@@ -43,7 +56,11 @@ export function ProductDetail({ product }: { product: MockProduct }) {
           )}
 
           {/* Main image */}
-          <div className="relative flex-1 aspect-square rounded-2xl">
+          <div
+            className="relative flex-1 aspect-square rounded-2xl"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
               {allFlags.map((flag) => (
                 <FlagPill key={flag} flag={flag} />
@@ -60,6 +77,21 @@ export function ProductDetail({ product }: { product: MockProduct }) {
             ) : (
               <div className="relative flex h-full items-center justify-center text-sm text-muted-foreground">
                 Sin imagen
+              </div>
+            )}
+            {/* Dot indicators — mobile only */}
+            {images.length > 1 && (
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 lg:hidden">
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveImage(i)}
+                    className={cn(
+                      "h-1.5 rounded-full transition-all",
+                      i === activeImage ? "w-4 bg-[var(--neon-purple)]" : "w-1.5 bg-white/30"
+                    )}
+                  />
+                ))}
               </div>
             )}
           </div>
