@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/catalogo", label: "Catálogo" },
   { href: "/other/Catalogo - Nuvape.pdf", label: "Catálogo PDF", external: true },
   { href: "/contacto", label: "Contacto" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 const WHATSAPP_NUMBER = "59892052416";

@@ -166,6 +166,15 @@ model Banner {
   updatedAt DateTime @updatedAt
 }
 
+model Faq {
+  id       String  @id @default(cuid())
+  question String
+  answer   String
+  position Int     @default(0)
+  active   Boolean @default(true)
+  createdAt DateTime @default(now())
+}
+
 model SiteSettings {
   id       String  @id @default(cuid())
   logoUrl  String?

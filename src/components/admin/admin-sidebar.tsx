@@ -9,6 +9,8 @@ import {
   Users,
   LogOut,
   BarChart2,
+  Megaphone,
+  HelpCircle,
 } from "lucide-react";
 import type { AdminSession } from "@/lib/admin-auth";
 import { cn } from "@/lib/utils";
@@ -19,6 +21,8 @@ const LINKS = [
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/productos", label: "Productos", icon: Package },
   { href: "/admin/stock", label: "Stock", icon: BarChart2 },
+  { href: "/admin/novedades", label: "Novedades", icon: Megaphone },
+  { href: "/admin/faq", label: "FAQ", icon: HelpCircle },
 ];
 
 export function AdminSidebar({ session }: { session: AdminSession }) {

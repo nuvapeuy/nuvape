@@ -7,6 +7,7 @@ import { ProductRow } from "@/components/product-row";
 import { TrustSection } from "@/components/trust-section";
 import { BrandsStrip } from "@/components/brands-strip";
 import { getProducts, getAllCategories } from "@/lib/products";
+import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 const WHATSAPP_NUMBER = "59892052416";
@@ -28,7 +29,11 @@ const CATEGORY_EMOJI: Record<string, string> = {
 };
 
 export default async function Home() {
-  const [allProducts, allCategories] = await Promise.all([getProducts(), getAllCategories()]);
+  const [allProducts, allCategories, banners] = await Promise.all([
+    getProducts(),
+    getAllCategories(),
+    prisma.banner.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
+  ]);
   const hero = HERO_PRODUCT;
 
   const bestSellers = allProducts.filter((p) => p.flags.includes("HOT"));
@@ -108,6 +113,25 @@ export default async function Home() {
       </section>
 
       <BrandsStrip />
+
+      {banners.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+          <h2 className="mb-5 text-xl font-bold text-white">✨ Novedades</h2>
+          <div className="flex flex-col gap-4">
+            {banners.map((b) => (
+              b.linkUrl ? (
+                <a key={b.id} href={b.linkUrl} className="block overflow-hidden rounded-2xl">
+                  <img src={b.imageUrl} alt={b.title} className="w-full object-cover" style={{ maxHeight: 420 }} />
+                </a>
+              ) : (
+                <div key={b.id} className="overflow-hidden rounded-2xl">
+                  <img src={b.imageUrl} alt={b.title} className="w-full object-cover" style={{ maxHeight: 420 }} />
+                </div>
+              )
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="pt-14">
         <ProductRow emoji="🔥" title="Más vendidos" products={bestSellers} />
