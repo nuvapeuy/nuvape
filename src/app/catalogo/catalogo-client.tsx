@@ -166,6 +166,8 @@ export default function CatalogoClient({ products, allCategories = [] }: { produ
               />
             </div>
           </div>
+
+          <FlavorQuiz products={products.filter((p) => p.stock > 0)} />
         </div>
       </div>
     </div>
@@ -314,5 +316,170 @@ function PromoCard({ title, description, totalPrice, unitPrice, qty, badge, imag
         </div>
       )}
     </>
+  );
+}
+
+// ─── Flavor Quiz ────────────────────────────────────────────────────────────
+
+const QUESTIONS = [
+  {
+    id: "intensity",
+    question: "¿Cómo te gusta el sabor?",
+    options: [
+      { label: "🧊 Fresco y mentolado", value: "menthol" },
+      { label: "🍓 Frutal y jugoso",    value: "frutal"  },
+      { label: "🍬 Dulce y cremoso",    value: "sweet"   },
+      { label: "🍋 Ácido y cítrico",    value: "citric"  },
+    ],
+  },
+  {
+    id: "moment",
+    question: "¿Cuándo lo usás más?",
+    options: [
+      { label: "☀️ De día, saliendo",   value: "day"    },
+      { label: "🌙 De noche, relajado", value: "night"  },
+      { label: "🏃 Haciendo algo",      value: "active" },
+      { label: "🛋️ En casa tranquilo",  value: "home"   },
+    ],
+  },
+  {
+    id: "nicotine",
+    question: "¿Qué tan intenso lo querés?",
+    options: [
+      { label: "💨 Suave",     value: "low"    },
+      { label: "⚡ Moderado",  value: "medium" },
+      { label: "🔥 Intenso",   value: "high"   },
+    ],
+  },
+];
+
+type Answers = Record<string, string>;
+
+function scoreProduct(p: MockProduct, answers: Answers): number {
+  let score = 0;
+  const name = p.name.toLowerCase();
+  const cats = p.categories.map((c) => c.toLowerCase());
+  const flavor = answers.intensity;
+  const moment = answers.moment;
+  const nicotine = answers.nicotine;
+
+  if (flavor === "menthol" && (cats.includes("mentolados") || name.includes("mint") || name.includes("ice") || name.includes("cool"))) score += 3;
+  if (flavor === "frutal"  && (cats.includes("frutales")   || name.includes("berry") || name.includes("mango") || name.includes("grape") || name.includes("peach") || name.includes("water"))) score += 3;
+  if (flavor === "sweet"   && (cats.includes("dulces")     || name.includes("cream") || name.includes("cola")  || name.includes("candy") || name.includes("choco"))) score += 3;
+  if (flavor === "citric"  && (cats.includes("cítricos")   || name.includes("lemon") || name.includes("lime")  || name.includes("citrus") || name.includes("orange"))) score += 3;
+
+  if ((moment === "day" || moment === "active") && (name.includes("ice") || name.includes("mint") || name.includes("fresh"))) score += 1;
+  if ((moment === "night" || moment === "home") && (name.includes("cream") || name.includes("cola") || name.includes("grape"))) score += 1;
+
+  if (nicotine === "high"   && p.nicotineLevel >= 40) score += 2;
+  if (nicotine === "medium" && p.nicotineLevel >= 20 && p.nicotineLevel < 40) score += 2;
+  if (nicotine === "low"    && p.nicotineLevel < 20)  score += 2;
+
+  if (p.flags.includes("HOT") || p.flags.includes("NEW")) score += 1;
+
+  return score;
+}
+
+function FlavorQuiz({ products }: { products: MockProduct[] }) {
+  const [started, setStarted]     = useState(false);
+  const [step, setStep]           = useState(0);
+  const [answers, setAnswers]     = useState<Answers>({});
+  const [result, setResult]       = useState<MockProduct | null>(null);
+  const addItem = useCartStore((s) => s.addItem);
+
+  function answer(value: string) {
+    const q = QUESTIONS[step];
+    const newAnswers = { ...answers, [q.id]: value };
+    setAnswers(newAnswers);
+    if (step < QUESTIONS.length - 1) {
+      setStep(step + 1);
+    } else {
+      const scored = products
+        .map((p) => ({ p, score: scoreProduct(p, newAnswers) }))
+        .sort((a, b) => b.score - a.score);
+      setResult(scored[0]?.p ?? products[0]);
+    }
+  }
+
+  function restart() {
+    setStep(0);
+    setAnswers({});
+    setResult(null);
+    setStarted(false);
+  }
+
+  if (!started) {
+    return (
+      <div className="glass rounded-2xl border border-white/10 p-8 text-center">
+        <p className="text-2xl font-extrabold text-white">¿No sabés cuál elegir?</p>
+        <p className="mt-2 text-sm text-muted-foreground">Respondé 3 preguntas y te recomendamos el sabor perfecto para vos.</p>
+        <button
+          onClick={() => setStarted(true)}
+          className="mt-6 rounded-xl bg-[var(--neon-purple)] px-8 py-3 text-sm font-bold text-white hover:bg-[var(--neon-purple)]/90 transition-colors glow-purple"
+        >
+          Empezar quiz 🎯
+        </button>
+      </div>
+    );
+  }
+
+  if (result) {
+    return (
+      <div className="glass rounded-2xl border border-[var(--neon-purple)]/30 p-8">
+        <p className="text-center text-xs font-semibold tracking-widest text-[var(--neon-purple)] uppercase">Tu sabor ideal es</p>
+        <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row">
+          <div className="relative h-40 w-40 shrink-0">
+            <div className="absolute inset-0 rounded-full bg-[var(--neon-purple)]/20 blur-2xl" />
+            <Image src={result.imageUrl} alt={result.name} fill className="object-contain drop-shadow-[0_0_20px_rgba(176,38,255,0.5)]" />
+          </div>
+          <div className="text-center sm:text-left">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">{result.brand}</p>
+            <h3 className="mt-1 text-2xl font-extrabold text-white">{result.name}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{result.puffs.toLocaleString("es-AR")} puffs · {result.nicotineLevel}mg</p>
+            <p className="mt-2 text-2xl font-extrabold text-[var(--neon-purple)]">${result.price.toLocaleString("es-AR")}</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-3 sm:justify-start">
+              <button
+                onClick={() => {
+                  addItem({ productId: result.id, name: result.name, slug: result.slug, price: result.price, imageUrl: result.imageUrl, stock: result.stock });
+                  toast.success(`${result.name} agregado al carrito.`);
+                }}
+                className="rounded-xl bg-[var(--neon-purple)] px-6 py-2.5 text-sm font-bold text-white hover:bg-[var(--neon-purple)]/90 transition-colors"
+              >
+                Agregar al carrito
+              </button>
+              <button onClick={restart} className="rounded-xl border border-white/10 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-white transition-colors">
+                Repetir quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const q = QUESTIONS[step];
+  return (
+    <div className="glass rounded-2xl border border-white/10 p-8">
+      <div className="mb-6 flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">Pregunta {step + 1} de {QUESTIONS.length}</p>
+        <div className="flex gap-1">
+          {QUESTIONS.map((_, i) => (
+            <div key={i} className={`h-1.5 w-8 rounded-full transition-colors ${i <= step ? "bg-[var(--neon-purple)]" : "bg-white/10"}`} />
+          ))}
+        </div>
+      </div>
+      <p className="text-xl font-bold text-white">{q.question}</p>
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {q.options.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => answer(opt.value)}
+            className="rounded-xl border border-white/10 px-5 py-4 text-left text-sm font-medium text-white hover:border-[var(--neon-purple)]/60 hover:bg-[var(--neon-purple)]/10 transition-all"
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
