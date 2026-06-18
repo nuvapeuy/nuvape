@@ -32,13 +32,11 @@ export default async function Home() {
   const hero = HERO_PRODUCT;
 
   const bestSellers = allProducts.filter((p) => p.flags.includes("HOT"));
-  const categoryRows = allCategories
-    .map((c) => ({
-      name: c.name,
-      emoji: CATEGORY_EMOJI[c.name] ?? "📦",
-      products: allProducts.filter((p) => p.categories.includes(c.name)),
-    }))
-    .filter((r) => r.products.length > 0);
+  const categoryRows = allCategories.map((c) => ({
+    name: c.name,
+    emoji: CATEGORY_EMOJI[c.name] ?? "📦",
+    products: allProducts.filter((p) => p.categories.includes(c.name)),
+  }));
 
   return (
     <div>
@@ -113,9 +111,20 @@ export default async function Home() {
 
       <div className="pt-14">
         <ProductRow emoji="🔥" title="Más vendidos" products={bestSellers} />
-        {categoryRows.map((r) => (
-          <ProductRow key={r.name} emoji={r.emoji} title={r.name} products={r.products} />
-        ))}
+        {categoryRows.map((r) =>
+          r.products.length > 0 ? (
+            <ProductRow key={r.name} emoji={r.emoji} title={r.name} products={r.products} />
+          ) : (
+            <section key={r.name} className="mx-auto max-w-7xl px-4 pb-14 sm:px-6">
+              <div className="mb-5 flex items-end justify-between">
+                <h2 className="text-xl font-bold text-white">{r.emoji} {r.name}</h2>
+              </div>
+              <div className="flex items-center justify-center rounded-2xl border border-[#C9A84C]/20 bg-[#C9A84C]/5 py-12">
+                <p className="text-lg font-bold tracking-widest text-[#C9A84C]">PRÓXIMAMENTE</p>
+              </div>
+            </section>
+          )
+        )}
       </div>
 
       <TrustSection />
