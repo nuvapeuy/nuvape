@@ -11,6 +11,7 @@ import {
   BarChart2,
   Megaphone,
   HelpCircle,
+  ShieldAlert,
 } from "lucide-react";
 import type { AdminSession } from "@/lib/admin-auth";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ const LINKS = [
   { href: "/admin/stock", label: "Stock", icon: BarChart2 },
   { href: "/admin/novedades", label: "Novedades", icon: Megaphone },
   { href: "/admin/faq", label: "FAQ", icon: HelpCircle },
+  { href: "/admin/seguridad", label: "Seguridad", icon: ShieldAlert },
 ];
 
 export function AdminSidebar({ session }: { session: AdminSession }) {

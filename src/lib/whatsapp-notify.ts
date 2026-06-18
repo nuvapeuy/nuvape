@@ -27,6 +27,26 @@ export async function notifyLowStockByWhatsApp(products: { name: string; stock: 
   });
 }
 
+export async function notifyFailedLoginAttempts(ip: string, email: string, count: number) {
+  const to = process.env.STORE_OWNER_EMAIL;
+  if (!process.env.RESEND_API_KEY || !to) return;
+
+  await getResend().emails.send({
+    from: "NUVAPE <onboarding@resend.dev>",
+    to,
+    subject: "🚨 Intentos de acceso fallidos — NUVAPE Admin",
+    html: `
+      <h2>🚨 Alerta de seguridad NUVAPE</h2>
+      <p>Se detectaron <b>${count} intentos fallidos</b> de acceso al panel de administración.</p>
+      <p><b>IP:</b> ${ip}</p>
+      <p><b>Email usado:</b> ${email}</p>
+      <p><b>Fecha:</b> ${new Date().toLocaleString("es-UY", { timeZone: "America/Montevideo" })}</p>
+      <br>
+      <p>Si fuiste vos probando, ignorá este mensaje. Si no, alguien está intentando entrar a tu panel.</p>
+    `,
+  });
+}
+
 type OrderNotificationInput = {
   customerName: string;
   phone: string;

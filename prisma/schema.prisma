@@ -175,6 +175,17 @@ model Faq {
   createdAt DateTime @default(now())
 }
 
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+  @@index([success, createdAt])
+}
+
 model SiteSettings {
   id       String  @id @default(cuid())
   logoUrl  String?

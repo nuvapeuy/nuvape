@@ -1,11 +1,33 @@
 import { NextResponse } from "next/server";
 import { createSessionToken, SESSION_COOKIE, STATIC_ADMINS } from "@/lib/admin-auth";
+import { prisma } from "@/lib/prisma";
+import { notifyFailedLoginAttempts } from "@/lib/whatsapp-notify";
+
+const ALERT_THRESHOLD = 3;
+const WINDOW_MINUTES = 15;
+
+function getIp(request: Request): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+}
 
 export async function POST(request: Request) {
   const { email, password } = (await request.json()) as { email: string; password: string };
+  const ip = getIp(request);
 
   const admin = STATIC_ADMINS.find((a) => a.email === email && a.password === password);
+
+  await prisma.loginAttempt.create({ data: { email, ip, success: !!admin } });
+
   if (!admin) {
+    const since = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000);
+    const recentFails = await prisma.loginAttempt.count({
+      where: { ip, success: false, createdAt: { gte: since } },
+    });
+
+    if (recentFails === ALERT_THRESHOLD) {
+      notifyFailedLoginAttempts(ip, email, recentFails).catch(console.error);
+    }
+
     return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
   }
 
