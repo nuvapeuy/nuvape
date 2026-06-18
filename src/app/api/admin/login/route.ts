@@ -13,6 +13,7 @@ function getIp(request: Request): string {
 export async function POST(request: Request) {
   const { email, password } = (await request.json()) as { email: string; password: string };
   const ip = getIp(request);
+  const userAgent = request.headers.get("user-agent") ?? "";
 
   const admin = STATIC_ADMINS.find((a) => a.email === email && a.password === password);
 
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     });
 
     if (recentFails === ALERT_THRESHOLD) {
-      notifyFailedLoginAttempts(ip, email, recentFails).catch(console.error);
+      notifyFailedLoginAttempts(ip, email, recentFails, userAgent).catch(console.error);
     }
 
     return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });

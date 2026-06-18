@@ -27,9 +27,45 @@ export async function notifyLowStockByWhatsApp(products: { name: string; stock: 
   });
 }
 
-export async function notifyFailedLoginAttempts(ip: string, email: string, count: number) {
+async function getIpInfo(ip: string): Promise<{ city: string; region: string; country: string; org: string } | null> {
+  try {
+    const res = await fetch(`https://ipinfo.io/${ip}/json?token=${process.env.IPINFO_TOKEN ?? ""}`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function parseUserAgent(ua: string): string {
+  if (!ua) return "Dispositivo desconocido";
+  const browser =
+    ua.includes("Edg/")     ? "Edge" :
+    ua.includes("Chrome/")  ? "Chrome" :
+    ua.includes("Firefox/") ? "Firefox" :
+    ua.includes("Safari/")  ? "Safari" :
+    ua.includes("curl")     ? "curl (automatizado)" : "Navegador desconocido";
+  const os =
+    ua.includes("iPhone")  ? "iPhone" :
+    ua.includes("iPad")    ? "iPad" :
+    ua.includes("Android") ? "Android" :
+    ua.includes("Windows") ? "Windows" :
+    ua.includes("Mac")     ? "Mac" :
+    ua.includes("Linux")   ? "Linux" : "SO desconocido";
+  return `${browser} en ${os}`;
+}
+
+export async function notifyFailedLoginAttempts(ip: string, email: string, count: number, userAgent?: string) {
   const to = process.env.STORE_OWNER_EMAIL;
   if (!process.env.RESEND_API_KEY || !to) return;
+
+  const [info] = await Promise.all([getIpInfo(ip)]);
+
+  const location = info
+    ? `${info.city ?? ""}${info.region ? `, ${info.region}` : ""}${info.country ? ` (${info.country})` : ""}`.trim()
+    : "Ubicación no disponible";
+  const isp = info?.org ?? "Proveedor desconocido";
+  const device = parseUserAgent(userAgent ?? "");
 
   await getResend().emails.send({
     from: "NUVAPE <onboarding@resend.dev>",
@@ -38,11 +74,16 @@ export async function notifyFailedLoginAttempts(ip: string, email: string, count
     html: `
       <h2>🚨 Alerta de seguridad NUVAPE</h2>
       <p>Se detectaron <b>${count} intentos fallidos</b> de acceso al panel de administración.</p>
-      <p><b>IP:</b> ${ip}</p>
-      <p><b>Email usado:</b> ${email}</p>
-      <p><b>Fecha:</b> ${new Date().toLocaleString("es-UY", { timeZone: "America/Montevideo" })}</p>
+      <table style="border-collapse:collapse;margin-top:12px">
+        <tr><td style="padding:4px 12px 4px 0;color:#888">Email usado</td><td style="padding:4px 0"><b>${email}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#888">IP</td><td style="padding:4px 0"><b>${ip}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#888">Ubicación</td><td style="padding:4px 0"><b>${location}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#888">Proveedor</td><td style="padding:4px 0"><b>${isp}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#888">Dispositivo</td><td style="padding:4px 0"><b>${device}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#888">Fecha</td><td style="padding:4px 0"><b>${new Date().toLocaleString("es-UY", { timeZone: "America/Montevideo" })}</b></td></tr>
+      </table>
       <br>
-      <p>Si fuiste vos probando, ignorá este mensaje. Si no, alguien está intentando entrar a tu panel.</p>
+      <p style="color:#888;font-size:13px">Si fuiste vos probando, ignorá este mensaje. Si no, alguien está intentando entrar a tu panel.</p>
     `,
   });
 }
