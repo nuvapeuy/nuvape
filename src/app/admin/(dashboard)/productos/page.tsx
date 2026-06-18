@@ -28,9 +28,7 @@ const EMPTY_FORM = {
   puffs: "",
   nicotineLevel: "",
   brandId: "",
-  imageUrl1: "",
-  imageUrl2: "",
-  imageUrl3: "",
+  imageUrls: [""],
   flagNames: [] as string[],
 };
 
@@ -72,7 +70,7 @@ export default function AdminProductsPage() {
   };
 
   const submitNew = async () => {
-    if (!form.name || !form.price || !form.brandId || !form.imageUrl) {
+    if (!form.name || !form.price || !form.brandId || !form.imageUrls[0]) {
       toast.error("Completá nombre, precio, marca e imagen.");
       return;
     }
@@ -88,7 +86,7 @@ export default function AdminProductsPage() {
         puffs: Number(form.puffs) || 0,
         nicotineLevel: Number(form.nicotineLevel) || 0,
         brandId: form.brandId,
-        imageUrls: [form.imageUrl1, form.imageUrl2, form.imageUrl3].filter(Boolean),
+        imageUrls: form.imageUrls.filter(Boolean),
         flagNames: form.flagNames,
       }),
     });
@@ -187,22 +185,44 @@ export default function AdminProductsPage() {
               <div>
                 <label className="text-xs text-muted-foreground">Imágenes (al menos 1) *</label>
                 <div className="mt-1 flex flex-col gap-2">
-                  {([["imageUrl1", "Imagen principal"], ["imageUrl2", "Imagen 2"], ["imageUrl3", "Imagen 3"]] as const).map(([key, label]) => (
-                    <div key={key}>
-                      <p className="text-[11px] text-muted-foreground mb-1">{label}</p>
+                  {form.imageUrls.map((url, i) => (
+                    <div key={i}>
+                      <p className="text-[11px] text-muted-foreground mb-1">{i === 0 ? "Imagen principal" : `Imagen ${i + 1}`}</p>
                       <div className="flex items-center gap-2">
                         <Input
-                          value={form[key]}
-                          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                          value={url}
+                          onChange={(e) => {
+                            const updated = [...form.imageUrls];
+                            updated[i] = e.target.value;
+                            setForm({ ...form, imageUrls: updated });
+                          }}
                           placeholder="/products/NombreImagen.png"
                         />
-                        {form[key] && (
+                        {url && (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={form[key]} alt="preview" className="h-10 w-10 shrink-0 rounded object-contain border border-white/10" />
+                          <img src={url} alt="preview" className="h-10 w-10 shrink-0 rounded object-contain border border-white/10" />
+                        )}
+                        {i > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setForm({ ...form, imageUrls: form.imageUrls.filter((_, j) => j !== i) })}
+                            className="text-muted-foreground hover:text-red-400"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         )}
                       </div>
                     </div>
                   ))}
+                  {form.imageUrls.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, imageUrls: [...form.imageUrls, ""] })}
+                      className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-white"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Agregar imagen
+                    </button>
+                  )}
                 </div>
               </div>
 
