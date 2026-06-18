@@ -207,7 +207,10 @@ function PromoCard({ title, description, totalPrice, unitPrice, qty, badge, imag
   const addItem = useCartStore((s) => s.addItem);
 
   const add = (p: MockProduct) => {
-    if (selected.length < qty) setSelected((prev) => [...prev, p]);
+    const alreadySelected = selected.filter((s) => s.id === p.id).length;
+    if (selected.length < qty && alreadySelected < p.stock) {
+      setSelected((prev) => [...prev, p]);
+    }
   };
 
   const remove = (index: number) => {
@@ -276,23 +279,28 @@ function PromoCard({ title, description, totalPrice, unitPrice, qty, badge, imag
 
             {/* Lista de productos */}
             <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
-              {availableProducts.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => add(p)}
-                  disabled={selected.length >= qty}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 p-3 text-left hover:bg-white/5 disabled:opacity-40 transition-colors"
-                >
-                  <div className="relative h-10 w-10 shrink-0">
-                    <Image src={p.imageUrl} alt={p.name} fill className="object-contain" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-white">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.stock} disponibles</p>
-                  </div>
-                  <Plus className="h-4 w-4 text-[var(--neon-purple)]" />
-                </button>
-              ))}
+              {availableProducts.map((p) => {
+                const alreadySelected = selected.filter((s) => s.id === p.id).length;
+                const isDisabled = selected.length >= qty || alreadySelected >= p.stock;
+                const remaining = p.stock - alreadySelected;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => add(p)}
+                    disabled={isDisabled}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 p-3 text-left hover:bg-white/5 disabled:opacity-40 transition-colors"
+                  >
+                    <div className="relative h-10 w-10 shrink-0">
+                      <Image src={p.imageUrl} alt={p.name} fill className="object-contain" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white">{p.name}</p>
+                      <p className="text-xs text-muted-foreground">{remaining} disponibles</p>
+                    </div>
+                    <Plus className="h-4 w-4 text-[var(--neon-purple)]" />
+                  </button>
+                );
+              })}
             </div>
 
             <button
