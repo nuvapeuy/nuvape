@@ -28,7 +28,9 @@ const EMPTY_FORM = {
   puffs: "",
   nicotineLevel: "",
   brandId: "",
-  imageUrl: "",
+  imageUrl1: "",
+  imageUrl2: "",
+  imageUrl3: "",
   flagNames: [] as string[],
 };
 
@@ -86,7 +88,7 @@ export default function AdminProductsPage() {
         puffs: Number(form.puffs) || 0,
         nicotineLevel: Number(form.nicotineLevel) || 0,
         brandId: form.brandId,
-        imageUrl: form.imageUrl,
+        imageUrls: [form.imageUrl1, form.imageUrl2, form.imageUrl3].filter(Boolean),
         flagNames: form.flagNames,
       }),
     });
@@ -183,12 +185,25 @@ export default function AdminProductsPage() {
               </div>
 
               <div>
-                <label className="text-xs text-muted-foreground">URL de imagen *</label>
-                <Input value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://..." className="mt-1" />
-                {form.imageUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={form.imageUrl} alt="preview" className="mt-2 h-20 w-20 rounded-lg object-contain border border-white/10" />
-                )}
+                <label className="text-xs text-muted-foreground">Imágenes (al menos 1) *</label>
+                <div className="mt-1 flex flex-col gap-2">
+                  {([["imageUrl1", "Imagen principal"], ["imageUrl2", "Imagen 2"], ["imageUrl3", "Imagen 3"]] as const).map(([key, label]) => (
+                    <div key={key}>
+                      <p className="text-[11px] text-muted-foreground mb-1">{label}</p>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={form[key]}
+                          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                          placeholder="/products/NombreImagen.png"
+                        />
+                        {form[key] && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={form[key]} alt="preview" className="h-10 w-10 shrink-0 rounded object-contain border border-white/10" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {flags.length > 0 && (

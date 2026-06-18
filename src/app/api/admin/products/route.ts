@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       puffs: number;
       nicotineLevel: number;
       brandId: string;
-      imageUrl: string;
+      imageUrls: string[];
       flagNames?: string[];
     };
 
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         puffs: body.puffs,
         nicotineLevel: body.nicotineLevel,
         brandId: body.brandId,
-        images: { create: { url: body.imageUrl, position: 0 } },
+        images: { create: body.imageUrls.map((url, i) => ({ url, position: i })) },
         flags: flagIds.length ? { create: flagIds.map((flagId) => ({ flagId })) } : undefined,
       },
     });
