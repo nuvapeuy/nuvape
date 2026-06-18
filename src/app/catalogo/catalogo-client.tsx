@@ -355,27 +355,30 @@ const QUESTIONS = [
 
 type Answers = Record<string, string>;
 
+const FLAVOR_TO_CATEGORY: Record<string, string> = {
+  menthol: "Mentolados",
+  frutal:  "Frutales",
+  sweet:   "Dulces",
+  citric:  "Cítricos",
+};
+
 function scoreProduct(p: MockProduct, answers: Answers): number {
   let score = 0;
-  const name = p.name.toLowerCase();
-  const cats = p.categories.map((c) => c.toLowerCase());
+  const cats = p.categories;
   const flavor = answers.intensity;
-  const moment = answers.moment;
   const nicotine = answers.nicotine;
 
-  if (flavor === "menthol" && (cats.includes("mentolados") || name.includes("mint") || name.includes("ice") || name.includes("cool"))) score += 3;
-  if (flavor === "frutal"  && (cats.includes("frutales")   || name.includes("berry") || name.includes("mango") || name.includes("grape") || name.includes("peach") || name.includes("water"))) score += 3;
-  if (flavor === "sweet"   && (cats.includes("dulces")     || name.includes("cream") || name.includes("cola")  || name.includes("candy") || name.includes("choco"))) score += 3;
-  if (flavor === "citric"  && (cats.includes("cítricos")   || name.includes("lemon") || name.includes("lime")  || name.includes("citrus") || name.includes("orange"))) score += 3;
+  // Categoría: peso principal
+  const targetCat = FLAVOR_TO_CATEGORY[flavor];
+  if (targetCat && cats.includes(targetCat)) score += 10;
 
-  if ((moment === "day" || moment === "active") && (name.includes("ice") || name.includes("mint") || name.includes("fresh"))) score += 1;
-  if ((moment === "night" || moment === "home") && (name.includes("cream") || name.includes("cola") || name.includes("grape"))) score += 1;
+  // Nivel de nicotina
+  if (nicotine === "high"   && p.nicotineLevel >= 40) score += 4;
+  if (nicotine === "medium" && p.nicotineLevel >= 20 && p.nicotineLevel < 40) score += 4;
+  if (nicotine === "low"    && p.nicotineLevel < 20)  score += 4;
 
-  if (nicotine === "high"   && p.nicotineLevel >= 40) score += 2;
-  if (nicotine === "medium" && p.nicotineLevel >= 20 && p.nicotineLevel < 40) score += 2;
-  if (nicotine === "low"    && p.nicotineLevel < 20)  score += 2;
-
-  if (p.flags.includes("HOT") || p.flags.includes("NEW")) score += 1;
+  // Desempate aleatorio para que no siempre salga el mismo
+  score += Math.random() * 2;
 
   return score;
 }
