@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifyLowStockByWhatsApp } from "@/lib/whatsapp-notify";
+
+async function checkAndNotifyLowStock(productIds: string[]) {
+  if (productIds.length === 0) return;
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { name: true, stock: true },
+  });
+  await notifyLowStockByWhatsApp(products).catch(() => {});
+}
 
 async function decrementStock(productId: string, quantity: number) {
   await prisma.$executeRaw`
@@ -74,11 +84,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
       // Descontar stock de nuevos items si ya fue entregado
       if (isDelivered) {
+        const affectedIds: string[] = [];
         for (const item of body.items) {
           if (isRealProduct(item.productId)) {
             await decrementStock(item.productId!, item.quantity);
+            affectedIds.push(item.productId!);
           }
         }
+        await checkAndNotifyLowStock(affectedIds);
       }
 
       await prisma.order.update({
@@ -111,11 +124,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
 
     if (status === "DELIVERED") {
+      const affectedIds: string[] = [];
       for (const item of order.items) {
         if (isRealProduct(item.productId)) {
           await decrementStock(item.productId!, item.quantity);
+          affectedIds.push(item.productId!);
         }
       }
+      await checkAndNotifyLowStock(affectedIds);
     }
 
     return NextResponse.json({ ok: true });
