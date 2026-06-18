@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   Users,
   LogOut,
+  BarChart2,
 } from "lucide-react";
 import type { AdminSession } from "@/lib/admin-auth";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ const LINKS = [
   { href: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/productos", label: "Productos", icon: Package },
+  { href: "/admin/stock", label: "Stock", icon: BarChart2 },
 ];
 
 export function AdminSidebar({ session }: { session: AdminSession }) {

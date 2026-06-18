@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FlagPill } from "@/components/flag-pill";
-import { Pencil, Check, X, Plus } from "lucide-react";
+import { Pencil, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 type Product = {
@@ -37,7 +37,6 @@ const EMPTY_FORM = {
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[] | null>(null);
-  const [editing, setEditing] = useState<{ id: string; stock: number } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -61,21 +60,6 @@ export default function AdminProductsPage() {
     fetch("/api/admin/flags").then((r) => r.json()).then(setFlags);
     fetch("/api/admin/categories").then((r) => r.json()).then(setCategories);
   }, []);
-
-  const saveStock = async (id: string, stock: number) => {
-    const res = await fetch(`/api/admin/products/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stock }),
-    });
-    if (res.ok) {
-      toast.success("Stock actualizado.");
-      setEditing(null);
-      load();
-    } else {
-      toast.error("Error al actualizar el stock.");
-    }
-  };
 
   const submitNew = async () => {
     if (!form.name || !form.price || !form.brandId || !form.imageUrls[0]) {
@@ -364,7 +348,6 @@ export default function AdminProductsPage() {
               <TableHead>Precio</TableHead>
               <TableHead>Etiquetas</TableHead>
               <TableHead>Categorías</TableHead>
-              <TableHead>Stock</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -392,36 +375,6 @@ export default function AdminProductsPage() {
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                </TableCell>
-                <TableCell>
-                  {editing?.id === p.id ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={0}
-                        className="h-7 w-20 text-sm"
-                        value={editing.stock}
-                        onChange={(e) => setEditing({ id: p.id, stock: Number(e.target.value) })}
-                        autoFocus
-                      />
-                      <button onClick={() => saveStock(p.id, editing.stock)} className="text-green-400 hover:text-green-300">
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-white">
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className={p.stock === 0 ? "text-red-400" : "text-white"}>{p.stock}</span>
-                      <button
-                        onClick={() => setEditing({ id: p.id, stock: p.stock })}
-                        className="text-muted-foreground hover:text-white"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
                 </TableCell>
               </TableRow>
             ))}
