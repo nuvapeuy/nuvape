@@ -19,6 +19,7 @@ type Product = {
 
 type Brand = { id: string; name: string };
 type Flag = { id: string; name: string; label: string };
+type Category = { id: string; name: string; productCount: number };
 
 const EMPTY_FORM = {
   name: "",
@@ -30,6 +31,7 @@ const EMPTY_FORM = {
   brandId: "",
   imageUrls: [""],
   flagNames: [] as string[],
+  categoryNames: [] as string[],
 };
 
 export default function AdminProductsPage() {
@@ -39,6 +41,7 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [flags, setFlags] = useState<Flag[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [saving, setSaving] = useState(false);
 
   const load = () => {
@@ -52,6 +55,7 @@ export default function AdminProductsPage() {
     load();
     fetch("/api/admin/brands").then((r) => r.json()).then(setBrands);
     fetch("/api/admin/flags").then((r) => r.json()).then(setFlags);
+    fetch("/api/admin/categories").then((r) => r.json()).then(setCategories);
   }, []);
 
   const saveStock = async (id: string, stock: number) => {
@@ -88,6 +92,7 @@ export default function AdminProductsPage() {
         brandId: form.brandId,
         imageUrls: form.imageUrls.filter(Boolean),
         flagNames: form.flagNames,
+        categoryNames: form.categoryNames,
       }),
     });
     setSaving(false);
@@ -107,6 +112,15 @@ export default function AdminProductsPage() {
       flagNames: f.flagNames.includes(name)
         ? f.flagNames.filter((n) => n !== name)
         : [...f.flagNames, name],
+    }));
+  };
+
+  const toggleCategory = (name: string) => {
+    setForm((f) => ({
+      ...f,
+      categoryNames: f.categoryNames.includes(name)
+        ? f.categoryNames.filter((n) => n !== name)
+        : [...f.categoryNames, name],
     }));
   };
 
@@ -225,6 +239,25 @@ export default function AdminProductsPage() {
                   )}
                 </div>
               </div>
+
+              {categories.length > 0 && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Categorías</label>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {categories.map((c) => (
+                      <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.categoryNames.includes(c.name)}
+                          onChange={() => toggleCategory(c.name)}
+                          className="h-4 w-4 accent-[var(--neon-purple)]"
+                        />
+                        <span className="text-sm text-white">{c.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {flags.length > 0 && (
                 <div>

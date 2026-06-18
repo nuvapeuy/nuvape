@@ -45,6 +45,7 @@ export type MockProduct = {
   flags: string[];
   description: string;
   flavors: string[];
+  categories: string[];
 };
 
 export const MOCK_PRODUCTS: MockProduct[] = [
@@ -61,7 +62,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     images: ["/products/BlueRazzICE.png", "/products/BlueRazzICE_v2.png", "/products/BlueRazzICE_v3.png"],
     flags: [],
     description: "Frambuesa azul helada con 5 niveles de frío ajustable. Pantalla digital integrada.",
-    flavors: ["Blue Razz Ice"],
+    flavors: ["Blue Razz Ice"], categories: [],
   },
   {
     id: "2",
@@ -76,7 +77,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     images: ["/products/WatermelonICE.png", "/products/WatermelonICE_v2.png", "/products/WatermelonICE_v3.png"],
     flags: [],
     description: "Sandía jugosa con un final helado refrescante. Pantalla digital integrada.",
-    flavors: ["Watermelon Ice"],
+    flavors: ["Watermelon Ice"], categories: [],
   },
   {
     id: "3",
@@ -91,7 +92,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     images: ["/products/GrapeICE.png", "/products/GrapeICE_v2.png", "/products/GrapeICE_v3.png"],
     flags: ["HOT"],
     description: "Uva intensa con toque helado y 5 niveles de frío ajustable.",
-    flavors: ["Grape Ice"],
+    flavors: ["Grape Ice"], categories: [],
   },
   {
     id: "4",
@@ -106,7 +107,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     images: ["/products/MangoMAGIC.png", "/products/MangoMAGIC_v2.png", "/products/MangoMAGIC_v3.png"],
     flags: ["HOT"],
     description: "Mango tropical dulce y cremoso con pantalla digital integrada.",
-    flavors: ["Mango"],
+    flavors: ["Mango"], categories: [],
   },
   {
     id: "5",
@@ -121,7 +122,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     images: ["/products/MiamiMINT.png", "/products/MiamiMINT_v2.png", "/products/MiamiMINT_v3.png"],
     flags: ["HOT"],
     description: "Menta fresca y refrescante, ideal para los amantes del hielo.",
-    flavors: ["Mint"],
+    flavors: ["Mint"], categories: [],
   },
   {
     id: "6",
@@ -136,7 +137,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     images: ["/products/PeachPlus.png", "/products/PeachPlus_v2.png", "/products/PeachPlus_v3.png"],
     flags: [],
     description: "Durazno dulce y jugoso con un toque vibrante.",
-    flavors: ["Peach"],
+    flavors: ["Peach"], categories: [],
   },
   {
     id: "7",
@@ -152,6 +153,7 @@ export const MOCK_PRODUCTS: MockProduct[] = [
     flags: ["SUMMER_EDITION"],
     description: "Menta negra intensa con sabor profundo y refrescante.",
     flavors: ["Mint", "Black Mint"],
+    categories: [],
   },
 ];
 

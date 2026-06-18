@@ -5,7 +5,11 @@ export async function GET() {
   try {
     const products = await prisma.product.findMany({
       where: { active: true },
-      include: { brand: true, flags: { include: { flag: true } } },
+      include: {
+        brand: true,
+        flags: { include: { flag: true } },
+        categories: { include: { category: true } },
+      },
       orderBy: { createdAt: "asc" },
     });
     return NextResponse.json(
@@ -17,6 +21,7 @@ export async function GET() {
         price: Number(p.price),
         stock: p.stock,
         flags: p.flags.map((pf: any) => pf.flag.name),
+        categories: p.categories.map((pc: any) => pc.category.name),
       }))
     );
   } catch (err) {
@@ -36,6 +41,7 @@ export async function POST(request: Request) {
       brandId: string;
       imageUrls: string[];
       flagNames?: string[];
+      categoryNames?: string[];
     };
 
     const slug = body.name
@@ -53,6 +59,12 @@ export async function POST(request: Request) {
       flagIds.push(...flags.map((f) => f.id));
     }
 
+    const categoryIds: string[] = [];
+    if (body.categoryNames?.length) {
+      const cats = await prisma.category.findMany({ where: { name: { in: body.categoryNames } } });
+      categoryIds.push(...cats.map((c) => c.id));
+    }
+
     const product = await prisma.product.create({
       data: {
         name: body.name,
@@ -65,6 +77,7 @@ export async function POST(request: Request) {
         brandId: body.brandId,
         images: { create: body.imageUrls.map((url, i) => ({ url, position: i })) },
         flags: flagIds.length ? { create: flagIds.map((flagId) => ({ flagId })) } : undefined,
+        categories: categoryIds.length ? { create: categoryIds.map((categoryId) => ({ categoryId })) } : undefined,
       },
     });
 

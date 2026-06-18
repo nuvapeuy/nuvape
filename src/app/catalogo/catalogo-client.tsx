@@ -15,12 +15,15 @@ import { toast } from "sonner";
 
 const MAX_PRICE = 3000;
 
-export default function CatalogoClient({ products }: { products: MockProduct[] }) {
+type CategoryMeta = { name: string; productCount: number };
+
+export default function CatalogoClient({ products, allCategories = [] }: { products: MockProduct[]; allCategories?: CategoryMeta[] }) {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [brands, setBrands] = useState<string[]>([]);
   const [flavors, setFlavors] = useState<string[]>([]);
   const [flags, setFlags] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [maxPrice, setMaxPrice] = useState(MAX_PRICE);
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -40,11 +43,12 @@ export default function CatalogoClient({ products }: { products: MockProduct[] }
       if (brands.length && !brands.includes(p.brand)) return false;
       if (flavors.length && !p.flavors.some((f) => flavors.includes(f))) return false;
       if (flags.length && !p.flags.some((f) => flags.includes(f))) return false;
+      if (selectedCategories.length && !p.categories?.some((c) => selectedCategories.includes(c))) return false;
       if (p.price > maxPrice) return false;
       if (onlyInStock && p.stock === 0) return false;
       return true;
     });
-  }, [query, brands, flavors, flags, maxPrice, onlyInStock, products]);
+  }, [query, brands, flavors, flags, selectedCategories, maxPrice, onlyInStock, products]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
@@ -71,6 +75,25 @@ export default function CatalogoClient({ products }: { products: MockProduct[] }
             <ChevronDown className={`h-4 w-4 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
           </button>
           <div className={`glass rounded-2xl p-5 ${filtersOpen ? "block" : "hidden"} lg:block`}>
+            {allCategories.length > 0 && (
+              <FilterGroup title="Categoría">
+                {allCategories.map((c) => (
+                  c.productCount > 0 ? (
+                    <FilterCheckbox
+                      key={c.name}
+                      label={c.name}
+                      checked={selectedCategories.includes(c.name)}
+                      onChange={() => toggle(selectedCategories, setSelectedCategories, c.name)}
+                    />
+                  ) : (
+                    <div key={c.name} className="flex items-center gap-2">
+                      <Checkbox disabled />
+                      <span className="text-sm text-[#C9A84C] font-medium">{c.name} <span className="text-[10px] font-normal opacity-80">— Próximamente</span></span>
+                    </div>
+                  )
+                ))}
+              </FilterGroup>
+            )}
             <FilterGroup title="Marca">
               {ALL_BRANDS.map((b) => (
                 <FilterCheckbox key={b} label={b} checked={brands.includes(b)} onChange={() => toggle(brands, setBrands, b)} />

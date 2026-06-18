@@ -82,6 +82,22 @@ model Flavor {
   products ProductFlavor[]
 }
 
+model Category {
+  id       String            @id @default(cuid())
+  name     String            @unique
+  products ProductCategory[]
+}
+
+model ProductCategory {
+  id         String   @id @default(cuid())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+
+  @@unique([productId, categoryId])
+}
+
 model ProductFlavor {
   id        String   @id @default(cuid())
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -116,6 +132,7 @@ model Product {
   images          ProductImage[]
   flags           ProductFlag[]
   flavors         ProductFlavor[]
+  categories      ProductCategory[]
   orderItems      OrderItem[]
   metaTitle        String?
   metaDescription  String?
