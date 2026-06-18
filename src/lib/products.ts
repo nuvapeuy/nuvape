@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 import type { MockProduct } from "./mock-data";
 
@@ -29,28 +28,20 @@ const include = {
   images: { orderBy: { position: "asc" as const } },
 };
 
-export const getProducts = unstable_cache(
-  async (): Promise<MockProduct[]> => {
-    const products = await prisma.product.findMany({
-      where: { active: true },
-      include,
-      orderBy: { createdAt: "asc" },
-    });
-    return products.map(mapProduct);
-  },
-  ["products"],
-  { revalidate: 60, tags: ["products"] }
-);
+export async function getProducts(): Promise<MockProduct[]> {
+  const products = await prisma.product.findMany({
+    where: { active: true },
+    include,
+    orderBy: { createdAt: "asc" },
+  });
+  return products.map(mapProduct);
+}
 
-export const getProductBySlug = unstable_cache(
-  async (slug: string): Promise<MockProduct | null> => {
-    const p = await prisma.product.findUnique({ where: { slug }, include });
-    if (!p) return null;
-    return mapProduct(p);
-  },
-  ["product-by-slug"],
-  { revalidate: 60, tags: ["products"] }
-);
+export async function getProductBySlug(slug: string): Promise<MockProduct | null> {
+  const p = await prisma.product.findUnique({ where: { slug }, include });
+  if (!p) return null;
+  return mapProduct(p);
+}
 
 export async function getAllCategories() {
   return prisma.category.findMany({
