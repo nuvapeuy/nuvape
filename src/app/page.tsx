@@ -118,12 +118,12 @@ export default async function Home() {
           <div className="flex flex-col gap-4">
             {banners.map((b) => (
               b.linkUrl ? (
-                <a key={b.id} href={b.linkUrl} className="block overflow-hidden rounded-2xl">
-                  <img src={b.imageUrl} alt={b.title} className="w-full object-cover" style={{ maxHeight: 420 }} />
+                <a key={b.id} href={b.linkUrl} className="block rounded-2xl overflow-hidden">
+                  <img src={b.imageUrl} alt={b.title} className="w-full h-auto" />
                 </a>
               ) : (
-                <div key={b.id} className="overflow-hidden rounded-2xl">
-                  <img src={b.imageUrl} alt={b.title} className="w-full object-cover" style={{ maxHeight: 420 }} />
+                <div key={b.id} className="rounded-2xl overflow-hidden">
+                  <img src={b.imageUrl} alt={b.title} className="w-full h-auto" />
                 </div>
               )
             ))}
