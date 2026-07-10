@@ -9,7 +9,6 @@ import { useCartStore } from "@/lib/cart-store";
 const NAV_LINKS = [
   { href: "/", label: "Inicio" },
   { href: "/catalogo", label: "Catálogo" },
-  { href: "/other/Catalogo - Nuvape.pdf", label: "Catálogo PDF", external: true },
   { href: "/contacto", label: "Contacto" },
   { href: "/faq", label: "FAQ" },
 ];
