@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCartStore, cartSubtotal } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 const SHIPPING_COST = 150;
 
@@ -12,9 +13,10 @@ export default function CartPage() {
   const items = useCartStore((s) => s.items);
   const setQuantity = useCartStore((s) => s.setQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
+  const [deliveryType, setDeliveryType] = useState<"encuentro" | "domicilio">("encuentro");
 
   const subtotal = cartSubtotal(items);
-  const shipping = items.length > 0 ? SHIPPING_COST : 0;
+  const shipping = deliveryType === "domicilio" ? SHIPPING_COST : 0;
   const total = subtotal + shipping;
 
   if (items.length === 0) {
@@ -80,6 +82,35 @@ export default function CartPage() {
               </div>
             </div>
           ))}
+
+          {/* Selector de entrega */}
+          <div className="glass rounded-xl p-5">
+            <p className="mb-3 text-sm font-semibold text-white uppercase tracking-wide">Tipo de entrega</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                onClick={() => setDeliveryType("encuentro")}
+                className={`rounded-xl border p-4 text-left transition-all ${
+                  deliveryType === "encuentro"
+                    ? "border-[var(--neon-purple)] bg-[var(--neon-purple)]/10"
+                    : "border-white/10 hover:border-white/30"
+                }`}
+              >
+                <p className="text-sm font-semibold text-white">📍 Punto de encuentro</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Sin costo adicional</p>
+              </button>
+              <button
+                onClick={() => setDeliveryType("domicilio")}
+                className={`rounded-xl border p-4 text-left transition-all ${
+                  deliveryType === "domicilio"
+                    ? "border-[var(--neon-purple)] bg-[var(--neon-purple)]/10"
+                    : "border-white/10 hover:border-white/30"
+                }`}
+              >
+                <p className="text-sm font-semibold text-white">🚚 Envío a domicilio</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">+${SHIPPING_COST.toLocaleString("es-AR")}</p>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="glass h-fit rounded-xl p-6">
@@ -91,14 +122,14 @@ export default function CartPage() {
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Envío</span>
-              <span>${shipping.toLocaleString("es-AR")}</span>
+              <span>{shipping === 0 ? "Gratis" : `$${shipping.toLocaleString("es-AR")}`}</span>
             </div>
             <div className="mt-2 flex justify-between border-t border-white/10 pt-2 text-base font-semibold text-white">
               <span>Total</span>
               <span>${total.toLocaleString("es-AR")}</span>
             </div>
           </div>
-          <Link href="/checkout">
+          <Link href={`/checkout?delivery=${deliveryType}`}>
             <Button className="mt-6 w-full bg-[var(--neon-purple)] text-white hover:bg-[var(--neon-purple)]/90">
               Finalizar pedido
             </Button>

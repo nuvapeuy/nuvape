@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCartStore, cartSubtotal } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,17 +17,20 @@ const WHATSAPP_NUMBER = "59892052416";
 type DeliveryType = "DOMICILIO" | "INTERIOR_DAC" | "MEETING_POINT";
 type PaymentMethod = "CASH" | "BANK_TRANSFER";
 
-const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping"];
+const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping", "Otro"];
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const items = useCartStore((s) => s.items);
   const setQuantity = useCartStore((s) => s.setQuantity);
   const clear = useCartStore((s) => s.clear);
   const subtotal = cartSubtotal(items);
 
-  const [deliveryType, setDeliveryType] = useState<DeliveryType>("DOMICILIO");
+  const initialDelivery: DeliveryType = searchParams.get("delivery") === "domicilio" ? "DOMICILIO" : "MEETING_POINT";
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>(initialDelivery);
   const [meetingPoint, setMeetingPoint] = useState(MEETING_POINTS[0]);
+  const [otherMeetingPoint, setOtherMeetingPoint] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
   const shippingCost = deliveryType === "DOMICILIO" ? (items.length > 0 ? SHIPPING_COST : 0) : 0;
   const total = subtotal + shippingCost;
@@ -83,7 +86,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           ...form,
           deliveryType: deliveryType === "MEETING_POINT" ? "INTERIOR_DAC" : deliveryType,
-          city: deliveryType === "MEETING_POINT" ? meetingPoint : form.city,
+          city: deliveryType === "MEETING_POINT" ? (meetingPoint === "Otro" ? otherMeetingPoint : meetingPoint) : form.city,
           paymentMethod,
           items: items.map((i) => ({
             productId: i.productId,
@@ -169,17 +172,29 @@ export default function CheckoutPage() {
               />
             </div>
             {deliveryType === "MEETING_POINT" && (
-              <div className="mt-3">
-                <Label className="mb-1.5 block text-sm text-muted-foreground">Elegí el shopping</Label>
-                <select
-                  value={meetingPoint}
-                  onChange={(e) => setMeetingPoint(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[var(--neon-purple)]"
-                >
-                  {MEETING_POINTS.map((mp) => (
-                    <option key={mp} value={mp}>{mp}</option>
-                  ))}
-                </select>
+              <div className="mt-3 flex flex-col gap-3">
+                <div>
+                  <Label className="mb-1.5 block text-sm text-muted-foreground">Elegí el punto de encuentro</Label>
+                  <select
+                    value={meetingPoint}
+                    onChange={(e) => setMeetingPoint(e.target.value)}
+                    className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[var(--neon-purple)]"
+                  >
+                    {MEETING_POINTS.map((mp) => (
+                      <option key={mp} value={mp}>{mp}</option>
+                    ))}
+                  </select>
+                </div>
+                {meetingPoint === "Otro" && (
+                  <div>
+                    <Label className="mb-1.5 block text-sm text-muted-foreground">¿Dónde?</Label>
+                    <Input
+                      placeholder="Indicá el lugar de encuentro"
+                      value={otherMeetingPoint}
+                      onChange={(e) => setOtherMeetingPoint(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </Card>
