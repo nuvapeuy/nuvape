@@ -216,6 +216,8 @@ model Order {
   paymentMethod PaymentMethod @default(CASH)
   deliveryType  DeliveryType  @default(DOMICILIO)
   status        OrderStatus   @default(PENDING)
+  discount      Decimal       @db.Decimal(10, 2) @default(0)
+  notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }

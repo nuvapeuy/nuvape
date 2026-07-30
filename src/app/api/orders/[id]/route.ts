@@ -42,6 +42,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     subtotal?: number;
     shippingCost?: number;
     total?: number;
+    discount?: number;
+    notes?: string;
+    customer?: { firstName?: string; lastName?: string; phone?: string; address?: string; city?: string };
+    customerId?: string;
   };
 
   try {
@@ -97,12 +101,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         await checkAndNotifyLowStock(affectedIds);
       }
 
+      if (body.customer && body.customerId) {
+        await prisma.customer.update({ where: { id: body.customerId }, data: body.customer });
+      }
+
       await prisma.order.update({
         where: { id },
         data: {
           ...(body.subtotal != null && { subtotal: body.subtotal }),
           ...(body.shippingCost != null && { shippingCost: body.shippingCost }),
           ...(body.total != null && { total: body.total }),
+          ...(body.discount != null && { discount: body.discount }),
+          ...(body.notes !== undefined && { notes: body.notes }),
           ...(body.deliveryType && { deliveryType: body.deliveryType as never }),
           ...(body.paymentMethod && { paymentMethod: body.paymentMethod as never }),
         },

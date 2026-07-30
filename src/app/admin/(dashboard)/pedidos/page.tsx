@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, X, Pencil, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, X, Pencil, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { toast } from "sonner";
 
 type OrderItem = {
@@ -17,28 +17,33 @@ type OrderItem = {
 type Order = {
   id: string;
   total: string;
+  discount: string;
+  notes: string | null;
   status: string;
   createdAt: string;
   paymentMethod: string;
   deliveryType: string;
-  customer: { firstName: string; lastName: string; phone: string; address: string; city: string };
+  customerId: string;
+  customer: { id: string; firstName: string; lastName: string; phone: string; address: string; city: string };
   items: OrderItem[];
 };
 
 type Product = { id: string; name: string; price: number; stock: number };
 type FormItem = { productId: string; name: string; quantity: number; unitPrice: number };
+type CustomerOption = { id: string; name: string; firstName: string; lastName: string; phone: string; address: string; city: string };
 
 const PROMOS = [
   { id: "promo-x3", label: "Pack x3", qty: 3, price: 3300 },
   { id: "promo-x5", label: "Pack x5", qty: 5, price: 5000 },
 ];
-const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping"];
-const EMPTY_FORM = { firstName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping" };
+const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping", "Otro"];
+const EMPTY_FORM = { firstName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping", discount: 0, notes: "" };
 
 const STATUS_LABELS: Record<string, string> = { PENDING: "Pendiente", CONFIRMED: "Confirmado", DELIVERED: "Entregado", CANCELLED: "Cancelado" };
 const STATUS_COLORS: Record<string, string> = { PENDING: "bg-yellow-500/20 text-yellow-300", CONFIRMED: "bg-blue-500/20 text-blue-300", DELIVERED: "bg-green-500/20 text-green-300", CANCELLED: "bg-red-500/20 text-red-300" };
 
-type FormState = { firstName: string; phone: string; address: string; city: string; deliveryType: string; paymentMethod: string; meetingPoint: string };
+type FormState = { firstName: string; phone: string; address: string; city: string; deliveryType: string; paymentMethod: string; meetingPoint: string; discount: number; notes: string };
+type EditFormState = { firstName: string; lastName: string; phone: string; address: string; city: string; deliveryType: string; paymentMethod: string; meetingPoint: string; discount: number; notes: string };
 
 function itemDisplayName(i: OrderItem) {
   return i.productName ?? i.product?.name ?? "?";
@@ -52,6 +57,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Modal nuevo pedido
@@ -66,7 +72,7 @@ export default function AdminOrdersPage() {
 
   // Modal edicion
   const [editOrder, setEditOrder] = useState<Order | null>(null);
-  const [editForm, setEditForm] = useState({ deliveryType: "DOMICILIO", paymentMethod: "CASH" });
+  const [editForm, setEditForm] = useState<EditFormState>({ firstName: "", lastName: "", phone: "", address: "", city: "", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping", discount: 0, notes: "" });
   const [editItems, setEditItems] = useState<FormItem[]>([]);
   const [editOriginalItems, setEditOriginalItems] = useState<FormItem[]>([]);
   const [editPromoModal, setEditPromoModal] = useState<typeof PROMOS[0] | null>(null);
@@ -77,14 +83,20 @@ export default function AdminOrdersPage() {
     fetch("/api/orders/list").then((r) => r.json()).then(setOrders).catch(() => {});
   };
 
+  const loadCustomers = () => {
+    fetch("/api/admin/customers")
+      .then((r) => r.json())
+      .then((data: CustomerOption[]) => setCustomers(data))
+      .catch(() => {});
+  };
+
   useEffect(() => {
     loadOrders();
     fetch("/api/admin/products").then((r) => r.json()).then(setProducts).catch(() => {});
+    loadCustomers();
   }, []);
 
   // ── helpers ───────────────────────────────────────────────
-  // originalItems: si se está editando un pedido DELIVERED, las unidades originales ya están
-  // descontadas del stock en la DB, así que hay que sumarlas para calcular el disponible real.
   const addItem = (items: FormItem[], setItems: (f: FormItem[]) => void, p: Product, originalItems?: FormItem[]) => {
     const exists = items.find((i) => i.productId === p.id);
     const currentQty = exists?.quantity ?? 0;
@@ -103,20 +115,18 @@ export default function AdminOrdersPage() {
 
   const shippingFor = (deliveryType: string) => deliveryType === "DOMICILIO" ? 150 : 0;
 
-  const calcTotal = (items: FormItem[], deliveryType: string) => {
+  const calcTotal = (items: FormItem[], deliveryType: string, discount: number) => {
     const sub = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
     const ship = shippingFor(deliveryType);
-    return { subtotal: sub, shippingCost: ship, total: sub + ship };
+    const total = Math.max(0, sub + ship - discount);
+    return { subtotal: sub, shippingCost: ship, total };
   };
 
-  // ── promo picker nuevo pedido ─────────────────────────────
+  // ── promo picker ─────────────────────────────────────────
   const togglePromo = (sel: Product[], setSel: (v: Product[]) => void, max: number, p: Product) => {
     const countInSel = sel.filter((x) => x.id === p.id).length;
     if (sel.length < max) {
-      if (countInSel >= p.stock) {
-        toast.error(`Stock insuficiente: solo hay ${p.stock} unidades de ${p.name}.`);
-        return;
-      }
+      if (countInSel >= p.stock) { toast.error(`Stock insuficiente: solo hay ${p.stock} unidades de ${p.name}.`); return; }
       setSel([...sel, p]);
     } else {
       const idx = sel.map((x) => x.id).lastIndexOf(p.id);
@@ -127,7 +137,6 @@ export default function AdminOrdersPage() {
   const confirmPromo = (modal: typeof PROMOS[0], sel: Product[], setItems: React.Dispatch<React.SetStateAction<FormItem[]>>, afterConfirm: () => void) => {
     if (sel.length !== modal.qty) return;
     const unitPrice = Math.round(modal.price / modal.qty);
-    // Agrupar productos repetidos
     const grouped = sel.reduce<Record<string, { product: Product; qty: number }>>((acc, p) => {
       if (acc[p.id]) acc[p.id].qty++;
       else acc[p.id] = { product: p, qty: 1 };
@@ -147,7 +156,7 @@ export default function AdminOrdersPage() {
   const submitManual = async () => {
     if (!form.firstName || !form.phone || formItems.length === 0) { toast.error("Completá nombre, teléfono y al menos un producto."); return; }
     setSubmitting(true);
-    const { subtotal, shippingCost, total } = calcTotal(formItems, form.deliveryType);
+    const { subtotal, shippingCost, total } = calcTotal(formItems, form.deliveryType, form.discount);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -155,7 +164,7 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({
           ...form, lastName: "", email: "",
           deliveryType: form.deliveryType === "MEETING_POINT" ? "INTERIOR_DAC" : form.deliveryType,
-          city: form.deliveryType === "MEETING_POINT" ? form.meetingPoint : form.city,
+          city: form.deliveryType === "MEETING_POINT" ? (form.meetingPoint === "Otro" ? form.address : form.meetingPoint) : form.city,
           items: formItems, subtotal, shippingCost, total,
         }),
       });
@@ -170,7 +179,18 @@ export default function AdminOrdersPage() {
   // ── abrir edicion ─────────────────────────────────────────
   const openEdit = (o: Order) => {
     setEditOrder(o);
-    setEditForm({ deliveryType: o.deliveryType, paymentMethod: o.paymentMethod });
+    setEditForm({
+      firstName: o.customer.firstName,
+      lastName: o.customer.lastName,
+      phone: o.customer.phone,
+      address: o.customer.address,
+      city: o.customer.city,
+      deliveryType: o.deliveryType,
+      paymentMethod: o.paymentMethod,
+      meetingPoint: "Portones Shopping",
+      discount: Number(o.discount ?? 0),
+      notes: o.notes ?? "",
+    });
     const mapped = o.items.map((i) => ({
       productId: i.productId ?? `promo-exist-${Math.random()}`,
       name: itemDisplayName(i),
@@ -178,8 +198,6 @@ export default function AdminOrdersPage() {
       unitPrice: Number(i.unitPrice),
     }));
     setEditItems(mapped);
-    // Si el pedido fue entregado, el stock de esos productos ya está descontado en la DB.
-    // Guardamos los originales para que addItem pueda sumarlos al stock disponible.
     const stockDecremented = ["CONFIRMED", "PREPARING", "SHIPPED", "DELIVERED"].includes(o.status);
     setEditOriginalItems(stockDecremented ? mapped : []);
   };
@@ -188,7 +206,7 @@ export default function AdminOrdersPage() {
   const saveEdit = async () => {
     if (!editOrder || editItems.length === 0) return;
     setSavingEdit(true);
-    const { subtotal, shippingCost, total } = calcTotal(editItems, editForm.deliveryType);
+    const { subtotal, shippingCost, total } = calcTotal(editItems, editForm.deliveryType, editForm.discount);
     try {
       const res = await fetch(`/api/orders/${editOrder.id}`, {
         method: "PATCH",
@@ -196,6 +214,16 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({
           deliveryType: editForm.deliveryType,
           paymentMethod: editForm.paymentMethod,
+          discount: editForm.discount,
+          notes: editForm.notes,
+          customer: {
+            firstName: editForm.firstName,
+            lastName: editForm.lastName,
+            phone: editForm.phone,
+            address: editForm.address,
+            city: editForm.city,
+          },
+          customerId: editOrder.customer.id,
           items: editItems.map((i) => ({ productId: i.productId, productName: i.name, quantity: i.quantity, unitPrice: i.unitPrice })),
           subtotal, shippingCost, total,
         }),
@@ -204,6 +232,7 @@ export default function AdminOrdersPage() {
       toast.success("Pedido actualizado.");
       setEditOrder(null);
       loadOrders();
+      loadCustomers();
     } catch (err) { toast.error(`Error: ${err instanceof Error ? err.message : String(err)}`); }
     finally { setSavingEdit(false); }
   };
@@ -233,9 +262,10 @@ export default function AdminOrdersPage() {
       {/* Modal nuevo pedido */}
       {showForm && (
         <Modal title="Nuevo pedido manual" onClose={() => setShowForm(false)}>
+          <CustomerPicker customers={customers} onSelect={(c) => setForm({ ...form, firstName: c.firstName, phone: c.phone, address: c.address, city: c.city })} />
           <FormFields form={form} setForm={setForm} />
           <ProductPicker products={products} items={formItems} onAddProduct={(p) => addItem(formItems, setFormItems, p)} onOpenPromo={(p) => { setPromoModal(p); setPromoSelected([]); }} />
-          <ItemsSummary items={formItems} deliveryType={form.deliveryType} onRemove={(id) => removeItem(formItems, setFormItems, id)} />
+          <ItemsSummary items={formItems} deliveryType={form.deliveryType} discount={form.discount} onRemove={(id) => removeItem(formItems, setFormItems, id)} />
           <button onClick={submitManual} disabled={submitting} className="w-full rounded-lg bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--neon-purple)]/90 disabled:opacity-50 mt-1">
             {submitting ? "Guardando..." : "Guardar pedido"}
           </button>
@@ -257,24 +287,10 @@ export default function AdminOrdersPage() {
       {/* Modal edicion pedido */}
       {editOrder && (
         <Modal title={`Editar pedido — ${editOrder.customer.firstName}`} onClose={() => setEditOrder(null)}>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground">Entrega</label>
-              <select value={editForm.deliveryType} onChange={(e) => setEditForm({ ...editForm, deliveryType: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
-                <option value="DOMICILIO">Domicilio (+$150)</option>
-                <option value="INTERIOR_DAC">Interior</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Pago</label>
-              <select value={editForm.paymentMethod} onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
-                <option value="CASH">Efectivo</option>
-                <option value="BANK_TRANSFER">Transferencia</option>
-              </select>
-            </div>
-          </div>
+          <CustomerPicker customers={customers} onSelect={(c) => setEditForm({ ...editForm, firstName: c.firstName, lastName: c.lastName, phone: c.phone, address: c.address, city: c.city })} />
+          <EditFormFields form={editForm} setForm={setEditForm} />
           <ProductPicker products={products} items={editItems} onAddProduct={(p) => addItem(editItems, setEditItems, p, editOriginalItems)} onOpenPromo={(p) => { setEditPromoModal(p); setEditPromoSelected([]); }} originalItems={editOriginalItems} />
-          <ItemsSummary items={editItems} deliveryType={editForm.deliveryType} onRemove={(id) => removeItem(editItems, setEditItems, id)} />
+          <ItemsSummary items={editItems} deliveryType={editForm.deliveryType} discount={editForm.discount} onRemove={(id) => removeItem(editItems, setEditItems, id)} />
           <button onClick={saveEdit} disabled={savingEdit || editItems.length === 0} className="mt-2 w-full rounded-lg bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white disabled:opacity-40">
             {savingEdit ? "Guardando..." : "Guardar cambios"}
           </button>
@@ -312,8 +328,6 @@ export default function AdminOrdersPage() {
             {orders === null && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Cargando...</TableCell></TableRow>}
             {orders?.map((o) => {
               const expanded = expandedItems.has(o.id);
-              const hasMany = o.items.length > 1;
-              const firstItem = o.items[0];
               return (
                 <TableRow key={o.id}>
                   <TableCell className="text-white">
@@ -328,14 +342,13 @@ export default function AdminOrdersPage() {
                         const dashIdx = full.indexOf(" — ");
                         const title = dashIdx >= 0 ? full.slice(0, dashIdx) : full;
                         const flavors = dashIdx >= 0 ? full.slice(dashIdx + 3).split(", ") : null;
-                        const itemExpanded = expanded;
-                        if (!itemExpanded && idx > 0) return null;
+                        if (!expanded && idx > 0) return null;
                         return (
                           <div key={idx}>
                             <span className="text-white font-medium block">{i.quantity}x {title}</span>
                             {flavors && (
                               <>
-                                {itemExpanded
+                                {expanded
                                   ? <ul className="mt-1 space-y-0.5">{flavors.map((f, fi) => <li key={fi} className="text-muted-foreground">· {f}</li>)}</ul>
                                   : <button onClick={() => toggleExpand(o.id)} className="text-[var(--neon-purple)] hover:underline flex items-center gap-0.5 mt-0.5">
                                       <ChevronRight className="h-3 w-3" /> ver sabores
@@ -358,9 +371,13 @@ export default function AdminOrdersPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{o.deliveryType === "DOMICILIO" ? "Domicilio" : "Interior"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{o.deliveryType === "DOMICILIO" ? "Domicilio" : o.deliveryType === "MEETING_POINT" ? "Encuentro" : "Interior"}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{o.paymentMethod === "CASH" ? "Efectivo" : "Transferencia"}</TableCell>
-                  <TableCell className="text-white">${Number(o.total).toLocaleString("es-AR")}</TableCell>
+                  <TableCell className="text-white">
+                    ${Number(o.total).toLocaleString("es-AR")}
+                    {Number(o.discount) > 0 && <p className="text-xs text-green-400">-${Number(o.discount).toLocaleString("es-AR")}</p>}
+                    {o.notes && <p className="text-xs text-muted-foreground italic truncate max-w-[100px]">{o.notes}</p>}
+                  </TableCell>
                   <TableCell>
                     <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[o.status] ?? "bg-gray-500/20 text-gray-300"}`}>
                       {STATUS_LABELS[o.status] ?? o.status}
@@ -410,11 +427,62 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
+function CustomerPicker({ customers, onSelect }: { customers: CustomerOption[]; onSelect: (c: CustomerOption) => void }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const filtered = query.length < 1 ? [] : customers.filter((c) =>
+    c.name.toLowerCase().includes(query.toLowerCase()) ||
+    c.phone.includes(query)
+  ).slice(0, 8);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="text-xs text-muted-foreground">Buscar cliente existente</label>
+      <div className="relative mt-1">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder="Nombre o teléfono..."
+          className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] pl-9 pr-3 py-2 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[var(--neon-purple)]"
+        />
+      </div>
+      {open && filtered.length > 0 && (
+        <div className="absolute z-10 mt-1 w-full rounded-lg border border-white/10 bg-[#111] shadow-xl overflow-hidden">
+          {filtered.map((c) => (
+            <button
+              key={c.id}
+              onMouseDown={(e) => { e.preventDefault(); onSelect(c); setQuery(c.name); setOpen(false); }}
+              className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/10 text-left"
+            >
+              <span className="text-sm text-white">{c.name}</span>
+              <span className="text-xs text-muted-foreground">{c.phone}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FormFields({ form, setForm }: { form: FormState; setForm: (f: FormState) => void }) {
   return (
     <>
-      <div><label className="text-xs text-muted-foreground">Nombre</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
-      <div><label className="text-xs text-muted-foreground">Telefono</label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className="text-xs text-muted-foreground">Nombre</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
+        <div><label className="text-xs text-muted-foreground">Teléfono</label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-xs text-muted-foreground">Entrega</label>
@@ -442,10 +510,73 @@ function FormFields({ form, setForm }: { form: FormState; setForm: (f: FormState
       )}
       {(form.deliveryType === "DOMICILIO" || form.deliveryType === "INTERIOR_DAC") && (
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="text-xs text-muted-foreground">Direccion</label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+          <div><label className="text-xs text-muted-foreground">Dirección</label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
           <div><label className="text-xs text-muted-foreground">Ciudad</label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
         </div>
       )}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground">Descuento ($)</label>
+          <Input type="number" min="0" value={form.discount || ""} onChange={(e) => setForm({ ...form, discount: Number(e.target.value) || 0 })} placeholder="0" />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Comentario</label>
+          <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ej: rebaja acordada" />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function EditFormFields({ form, setForm }: { form: EditFormState; setForm: (f: EditFormState) => void }) {
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className="text-xs text-muted-foreground">Nombre</label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></div>
+        <div><label className="text-xs text-muted-foreground">Apellido</label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></div>
+      </div>
+      <div><label className="text-xs text-muted-foreground">Teléfono</label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground">Entrega</label>
+          <select value={form.deliveryType} onChange={(e) => setForm({ ...form, deliveryType: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
+            <option value="DOMICILIO">Domicilio (+$150)</option>
+            <option value="INTERIOR_DAC">Interior</option>
+            <option value="MEETING_POINT">Punto de encuentro</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Pago</label>
+          <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
+            <option value="CASH">Efectivo</option>
+            <option value="BANK_TRANSFER">Transferencia</option>
+          </select>
+        </div>
+      </div>
+      {form.deliveryType === "MEETING_POINT" && (
+        <div>
+          <label className="text-xs text-muted-foreground">Shopping</label>
+          <select value={form.meetingPoint} onChange={(e) => setForm({ ...form, meetingPoint: e.target.value })} className="w-full rounded-lg border border-white/10 bg-[#0e0e0e] px-3 py-2 text-sm text-white">
+            {MEETING_POINTS.map((mp) => <option key={mp} value={mp}>{mp}</option>)}
+          </select>
+        </div>
+      )}
+      {(form.deliveryType === "DOMICILIO" || form.deliveryType === "INTERIOR_DAC") && (
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="text-xs text-muted-foreground">Dirección</label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+          <div><label className="text-xs text-muted-foreground">Ciudad</label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground">Descuento ($)</label>
+          <Input type="number" min="0" value={form.discount || ""} onChange={(e) => setForm({ ...form, discount: Number(e.target.value) || 0 })} placeholder="0" />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Comentario</label>
+          <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ej: rebaja acordada" />
+        </div>
+      </div>
     </>
   );
 }
@@ -496,10 +627,11 @@ function ProductPicker({ products, items, onAddProduct, onOpenPromo, originalIte
   );
 }
 
-function ItemsSummary({ items, deliveryType, onRemove }: { items: FormItem[]; deliveryType: string; onRemove: (id: string) => void }) {
+function ItemsSummary({ items, deliveryType, discount, onRemove }: { items: FormItem[]; deliveryType: string; discount: number; onRemove: (id: string) => void }) {
   if (items.length === 0) return null;
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shipping = deliveryType === "DOMICILIO" ? 150 : 0;
+  const total = Math.max(0, subtotal + shipping - discount);
   return (
     <div className="rounded-lg border border-white/10 p-3 flex flex-col gap-1">
       {items.map((i) => (
@@ -511,8 +643,13 @@ function ItemsSummary({ items, deliveryType, onRemove }: { items: FormItem[]; de
           </div>
         </div>
       ))}
+      {discount > 0 && (
+        <div className="flex justify-between text-sm text-green-400">
+          <span>Descuento</span><span>-${discount.toLocaleString("es-AR")}</span>
+        </div>
+      )}
       <div className="mt-2 border-t border-white/10 pt-2 flex justify-between text-sm font-semibold text-white">
-        <span>Total</span><span>${(subtotal + shipping).toLocaleString("es-AR")}</span>
+        <span>Total</span><span>${total.toLocaleString("es-AR")}</span>
       </div>
     </div>
   );
