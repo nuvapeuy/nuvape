@@ -154,7 +154,7 @@ export default function AdminOrdersPage() {
 
   // ── submit nuevo pedido ───────────────────────────────────
   const submitManual = async () => {
-    if (!form.firstName || !form.phone || formItems.length === 0) { toast.error("Completá nombre, teléfono y al menos un producto."); return; }
+    if (!form.firstName || formItems.length === 0) { toast.error("Completá el nombre y al menos un producto."); return; }
     setSubmitting(true);
     const { subtotal, shippingCost, total } = calcTotal(formItems, form.deliveryType, form.discount);
     try {

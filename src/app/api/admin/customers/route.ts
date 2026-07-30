@@ -18,10 +18,11 @@ export async function GET() {
       },
     });
 
-    // Agrupar por telefono
+    // Agrupar por telefono (clientes sin teléfono no se agrupan entre sí)
     const byPhone = new Map<string, typeof customers>();
     for (const c of customers) {
-      const key = c.phone.replace(/\D/g, "");
+      const digits = c.phone.replace(/\D/g, "");
+      const key = digits.length > 0 ? digits : `__nophone__${c.id}`;
       if (!byPhone.has(key)) byPhone.set(key, []);
       byPhone.get(key)!.push(c);
     }

@@ -82,7 +82,7 @@ function CheckoutInner() {
     e.preventDefault();
     if (items.length === 0) return;
     const digits = form.phone.replace(/\D/g, "");
-    if (digits.length < 9 || digits.length > 15) {
+    if (form.phone.trim() && (digits.length < 9 || digits.length > 15)) {
       toast.error("Ingresá un número de teléfono válido (entre 9 y 15 dígitos).");
       return;
     }
@@ -139,8 +139,8 @@ function CheckoutInner() {
                   }}
                 />
               </Field>
-              <Field label="Teléfono">
-                <Input required placeholder="+598 99 123 456" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
+              <Field label="Teléfono (opcional)">
+                <Input placeholder="+598 99 123 456" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
               </Field>
               {(deliveryType === "DOMICILIO" || deliveryType === "INTERIOR_DAC") && (
                 <>
