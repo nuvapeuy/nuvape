@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCartStore, cartSubtotal } from "@/lib/cart-store";
@@ -20,6 +20,14 @@ type PaymentMethod = "CASH" | "BANK_TRANSFER";
 const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping", "Otro"];
 
 export default function CheckoutPage() {
+  return (
+    <Suspense>
+      <CheckoutInner />
+    </Suspense>
+  );
+}
+
+function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const items = useCartStore((s) => s.items);
