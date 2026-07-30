@@ -35,8 +35,14 @@ export async function GET() {
       );
       const name = `${group[0].firstName} ${group[0].lastName}`.trim();
       return {
+        id: group[0].id,
         phone: group[0].phone,
         name,
+        firstName: group[0].firstName,
+        lastName: group[0].lastName,
+        email: group[0].email,
+        address: group[0].address,
+        city: group[0].city,
         orderCount: activeOrders.length,
         totalSpent,
         lastOrder: sorted[0]?.createdAt ?? null,

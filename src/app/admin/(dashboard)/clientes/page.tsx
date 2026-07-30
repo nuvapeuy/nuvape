@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trophy, ChevronDown, ChevronRight } from "lucide-react";
+import { Trophy, ChevronDown, ChevronRight, Pencil, X } from "lucide-react";
 
 type OrderRow = {
   id: string;
@@ -12,8 +12,14 @@ type OrderRow = {
 };
 
 type CustomerRow = {
+  id: string;
   phone: string;
   name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  city: string;
   orderCount: number;
   totalSpent: number;
   lastOrder: string | null;
@@ -37,13 +43,20 @@ const STATUS_COLORS: Record<string, string> = {
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<CustomerRow[] | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [editing, setEditing] = useState<CustomerRow | null>(null);
+  const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", email: "", address: "", city: "" });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  function fetchCustomers() {
     fetch("/api/admin/customers")
       .then((r) => r.json())
       .then(setCustomers)
       .catch(() => setCustomers([]));
-  }, []);
+  }
 
   const toggle = (phone: string) => {
     setExpanded((prev) => {
@@ -53,6 +66,25 @@ export default function AdminCustomersPage() {
       return next;
     });
   };
+
+  function openEdit(c: CustomerRow, e: React.MouseEvent) {
+    e.stopPropagation();
+    setEditing(c);
+    setForm({ firstName: c.firstName, lastName: c.lastName, phone: c.phone, email: c.email, address: c.address, city: c.city });
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    setSaving(true);
+    await fetch(`/api/admin/customers/${editing.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    setSaving(false);
+    setEditing(null);
+    fetchCustomers();
+  }
 
   return (
     <div>
@@ -67,11 +99,11 @@ export default function AdminCustomersPage() {
             <tr className="border-b border-white/10 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
               <th className="px-4 py-3 w-10">#</th>
               <th className="px-4 py-3">Cliente</th>
-              <th className="px-4 py-3">Telefono</th>
+              <th className="px-4 py-3">Teléfono</th>
               <th className="px-4 py-3">Pedidos</th>
               <th className="px-4 py-3">Total gastado</th>
-              <th className="px-4 py-3">Ultimo pedido</th>
-              <th className="px-4 py-3 w-8"></th>
+              <th className="px-4 py-3">Último pedido</th>
+              <th className="px-4 py-3 w-16"></th>
             </tr>
           </thead>
           <tbody>
@@ -99,10 +131,18 @@ export default function AdminCustomersPage() {
                     <td className="px-4 py-3 text-muted-foreground">
                       {c.lastOrder ? new Date(c.lastOrder).toLocaleDateString("es-AR") : "-"}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {c.orders.length > 0 && (
-                        open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
-                      )}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => openEdit(c, e)}
+                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-white/10 hover:text-white transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        {c.orders.length > 0 && (
+                          open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
                     </td>
                   </tr>
                   {open && (
@@ -134,12 +174,64 @@ export default function AdminCustomersPage() {
             })}
             {customers?.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Todavia no hay clientes registrados.</td>
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Todavía no hay clientes registrados.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Modal de edición */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="glass w-full max-w-md rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-white">Editar cliente</h3>
+              <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Nombre" value={form.firstName} onChange={(v) => setForm({ ...form, firstName: v })} />
+                <Field label="Apellido" value={form.lastName} onChange={(v) => setForm({ ...form, lastName: v })} />
+              </div>
+              <Field label="Teléfono" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+              <Field label="Email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
+              <Field label="Dirección" value={form.address} onChange={(v) => setForm({ ...form, address: v })} />
+              <Field label="Ciudad / Zona" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
+            </div>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => setEditing(null)}
+                className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm text-muted-foreground hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={saving}
+                className="flex-1 rounded-xl bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--neon-purple)]/90 disabled:opacity-50 transition-colors"
+              >
+                {saving ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[var(--neon-purple)]"
+      />
     </div>
   );
 }
