@@ -6,8 +6,7 @@ import { useCartStore, cartSubtotal } from "@/lib/cart-store";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-
-const SHIPPING_COST = 150;
+import { SHIPPING_COST } from "@/lib/pricing";
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);
@@ -47,9 +46,13 @@ export default function CartPage() {
                 )}
               </div>
               <div className="flex-1">
-                <Link href={`/producto/${item.slug}`} className="font-semibold text-white hover:text-[var(--neon-purple)]">
-                  {item.name}
-                </Link>
+                {item.slug ? (
+                  <Link href={`/producto/${item.slug}`} className="font-semibold text-white hover:text-[var(--neon-purple)]">
+                    {item.name}
+                  </Link>
+                ) : (
+                  <p className="font-semibold text-white">{item.name}</p>
+                )}
                 <p className="text-sm text-muted-foreground">
                   ${item.price.toLocaleString("es-AR")} c/u
                 </p>

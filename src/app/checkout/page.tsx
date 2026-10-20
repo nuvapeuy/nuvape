@@ -10,9 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Truck, Package, Minus, Plus, Banknote, Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const SHIPPING_COST = 150;
-const WHATSAPP_NUMBER = "59892052416";
+import { SHIPPING_COST } from "@/lib/pricing";
 
 type DeliveryType = "DOMICILIO" | "INTERIOR_DAC" | "MEETING_POINT";
 type PaymentMethod = "CASH" | "BANK_TRANSFER";
@@ -57,27 +55,6 @@ function CheckoutInner() {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
-  function buildWhatsAppMessage() {
-    const itemsText = items.map((i) => `• ${i.quantity}x ${i.name} ($${i.price.toLocaleString("es-AR")} c/u)`).join("\n");
-    const deliveryText =
-      deliveryType === "DOMICILIO" ? "Envío a domicilio" : "Envío al interior / DAC (costo a coordinar)";
-    const paymentText =
-      paymentMethod === "CASH" ? "Efectivo contra entrega" : "Transferencia bancaria (Itaú)";
-
-    return (
-      `Hola! Quiero confirmar mi pedido en NUVAPE:\n\n` +
-      `${itemsText}\n\n` +
-      `Subtotal: $${subtotal.toLocaleString("es-AR")}\n` +
-      `${deliveryType === "DOMICILIO" ? `Envío: $${shippingCost.toLocaleString("es-AR")}\n` : ""}` +
-      `Total: $${total.toLocaleString("es-AR")}\n\n` +
-      `${deliveryText}\n` +
-      `Pago: ${paymentText}\n` +
-      `Nombre: ${form.firstName} ${form.lastName}\n` +
-      `Dirección: ${form.address}, ${form.city}\n\n` +
-      `Quedo a la espera para coordinar el pago.`
-    );
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (items.length === 0) return;
@@ -96,24 +73,25 @@ function CheckoutInner() {
           deliveryType: deliveryType === "MEETING_POINT" ? "INTERIOR_DAC" : deliveryType,
           city: deliveryType === "MEETING_POINT" ? (meetingPoint === "Otro" ? otherMeetingPoint : meetingPoint) : form.city,
           paymentMethod,
+          // Precios y total los calcula el servidor; acá solo va qué se eligió.
           items: items.map((i) => ({
             productId: i.productId,
-            name: i.name,
             quantity: i.quantity,
-            unitPrice: i.price,
+            ...(i.pack && { pack: i.pack }),
           })),
-          subtotal,
-          shippingCost,
-          total,
         }),
       });
-      if (!res.ok) throw new Error("No se pudo registrar el pedido");
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast.error(data.error ?? "Hubo un error al registrar tu pedido. Intentá nuevamente.");
+        return;
+      }
 
       clear();
       toast.success("¡Pedido recibido! Nos pondremos en contacto a la brevedad.");
       router.push("/");
     } catch {
-      toast.error("Hubo un error al registrar tu pedido. Intentá nuevamente.");
+      toast.error("Hubo un error de conexión. Revisá tu internet e intentá nuevamente.");
     } finally {
       setSubmitting(false);
     }

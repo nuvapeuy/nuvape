@@ -11,6 +11,8 @@ export type CartItem = {
   imageUrl: string | null;
   quantity: number;
   stock: number;
+  // Solo para packs: qué promo es y qué productos eligió el cliente (uno por unidad).
+  pack?: { promoId: string; productIds: string[] };
 };
 
 type CartState = {
@@ -51,7 +53,16 @@ export const useCartStore = create<CartState>()(
         }),
       clear: () => set({ items: [] }),
     }),
-    { name: "nuvape-cart" }
+    {
+      name: "nuvape-cart",
+      version: 1,
+      // v0 guardaba los packs sin los productos elegidos: el servidor no puede cotizarlos, se descartan.
+      migrate: (persisted) => {
+        const state = persisted as { items?: CartItem[] } | undefined;
+        const items = (state?.items ?? []).filter((i) => !i.productId.startsWith("promo-") || i.pack);
+        return { ...state, items } as CartState;
+      },
+    }
   )
 );
 

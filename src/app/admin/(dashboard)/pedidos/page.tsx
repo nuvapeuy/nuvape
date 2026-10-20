@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Plus, X, Pencil, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { toast } from "sonner";
+import { PROMOS as SHARED_PROMOS, shippingFor } from "@/lib/pricing";
 
 type OrderItem = {
   productId: string | null;
@@ -28,14 +29,11 @@ type Order = {
   items: OrderItem[];
 };
 
-type Product = { id: string; name: string; price: number; stock: number };
+type Product = { id: string; name: string; brand: string; price: number; stock: number };
 type FormItem = { productId: string; name: string; quantity: number; unitPrice: number };
 type CustomerOption = { id: string; name: string; firstName: string; lastName: string; phone: string; address: string; city: string };
 
-const PROMOS = [
-  { id: "promo-x3", label: "Pack x3", qty: 3, price: 3300 },
-  { id: "promo-x5", label: "Pack x5", qty: 5, price: 5000 },
-];
+const PROMOS = SHARED_PROMOS.map((p) => ({ id: p.id, label: p.title, brandName: p.brandName, qty: p.qty, price: p.price }));
 const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping", "Otro"];
 const EMPTY_FORM = { firstName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping", discount: 0, notes: "" };
 
@@ -113,8 +111,6 @@ export default function AdminOrdersPage() {
   const removeItem = (items: FormItem[], setItems: (f: FormItem[]) => void, productId: string) =>
     setItems(items.filter((i) => i.productId !== productId));
 
-  const shippingFor = (deliveryType: string) => deliveryType === "DOMICILIO" ? 150 : 0;
-
   const calcTotal = (items: FormItem[], deliveryType: string, discount: number) => {
     const sub = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
     const ship = shippingFor(deliveryType);
@@ -158,7 +154,7 @@ export default function AdminOrdersPage() {
     setSubmitting(true);
     const { subtotal, shippingCost, total } = calcTotal(formItems, form.deliveryType, form.discount);
     try {
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/admin/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -630,7 +626,7 @@ function ProductPicker({ products, items, onAddProduct, onOpenPromo, originalIte
 function ItemsSummary({ items, deliveryType, discount, onRemove }: { items: FormItem[]; deliveryType: string; discount: number; onRemove: (id: string) => void }) {
   if (items.length === 0) return null;
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
-  const shipping = deliveryType === "DOMICILIO" ? 150 : 0;
+  const shipping = shippingFor(deliveryType);
   const total = Math.max(0, subtotal + shipping - discount);
   return (
     <div className="rounded-lg border border-white/10 p-3 flex flex-col gap-1">
@@ -667,7 +663,7 @@ function PromoPickerModal({ promo, products, selected, onToggle, onConfirm, onCl
     <Modal title={`${promo.label} — elegí ${promo.qty} sabores`} onClose={onClose}>
       <p className="text-xs text-muted-foreground">Seleccionados: {selected.length} / {promo.qty}</p>
       <div className="flex flex-col gap-1 max-h-56 overflow-y-auto">
-        {products.map((p) => {
+        {products.filter((p) => p.brand === promo.brandName).map((p) => {
           const count = selected.filter((x) => x.id === p.id).length;
           return (
             <button key={p.id} onClick={() => onToggle(p)} className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors ${count > 0 ? "border-[var(--neon-purple)]/60 bg-[var(--neon-purple)]/10" : "border-white/10 hover:bg-white/5"}`}>

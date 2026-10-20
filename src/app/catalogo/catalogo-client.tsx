@@ -12,6 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Search, SlidersHorizontal, ChevronDown, X, Plus, Minus } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { toast } from "sonner";
+import { PROMOS, type PromoDef } from "@/lib/pricing";
 
 const MAX_PRICE = 3000;
 
@@ -144,26 +145,13 @@ export default function CatalogoClient({ products, allCategories = [] }: { produ
           <div id="promociones">
             <h2 className="mb-4 text-xl font-bold text-white">🎁 Promociones vigentes</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <PromoCard
-                title="Pack x3"
-                description="Llevate 3 ELFBAR Ice King 40K a elección"
-                totalPrice={3300}
-                unitPrice={1100}
-                qty={3}
-                badge="AHORRÁS $150"
-                image="/promos/Elfbar PROMO X3.png"
-                availableProducts={products.filter((p) => p.stock > 0)}
-              />
-              <PromoCard
-                title="Pack x5"
-                description="Llevate 5 ELFBAR Ice King 40K a elección"
-                totalPrice={5000}
-                unitPrice={1000}
-                qty={5}
-                badge="AHORRÁS $750"
-                image="/promos/Elfbar PROMO X3.png"
-                availableProducts={products.filter((p) => p.stock > 0)}
-              />
+              {PROMOS.map((promo) => (
+                <PromoCard
+                  key={promo.id}
+                  promo={promo}
+                  availableProducts={products.filter((p) => p.stock > 0 && p.brand === promo.brandName)}
+                />
+              ))}
             </div>
           </div>
 
@@ -192,17 +180,12 @@ function FilterCheckbox({ label, checked, onChange }: { label: string; checked: 
 }
 
 type PromoCardProps = {
-  title: string;
-  description: string;
-  totalPrice: number;
-  unitPrice: number;
-  qty: number;
-  badge: string;
-  image: string;
+  promo: PromoDef;
   availableProducts: MockProduct[];
 };
 
-function PromoCard({ title, description, totalPrice, unitPrice, qty, badge, image, availableProducts }: PromoCardProps) {
+function PromoCard({ promo, availableProducts }: PromoCardProps) {
+  const { title, description, price: totalPrice, qty, badge, image } = promo;
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<MockProduct[]>([]);
   const addItem = useCartStore((s) => s.addItem);
@@ -221,12 +204,14 @@ function PromoCard({ title, description, totalPrice, unitPrice, qty, badge, imag
   const confirm = () => {
     const flavors = selected.map((p) => p.name.replace(/ 40K$/i, "")).join(", ");
     addItem({
-      productId: `promo-${qty}-${Date.now()}`,
+      productId: `promo-${promo.id}-${Date.now()}`,
       name: `${title} — ${flavors}`,
       slug: "",
       price: totalPrice,
       imageUrl: image,
-      stock: 999,
+      // Tope de packs iguales según el producto elegido con menos stock (el servidor lo vuelve a validar).
+      stock: Math.max(1, Math.min(...selected.map((p) => Math.floor(p.stock / selected.filter((s) => s.id === p.id).length)))),
+      pack: { promoId: promo.id, productIds: selected.map((p) => p.id) },
     });
     toast.success(`${title} agregado al carrito.`);
     setOpen(false);
