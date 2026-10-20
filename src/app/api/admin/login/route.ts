@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSessionToken, SESSION_COOKIE, STATIC_ADMINS } from "@/lib/admin-auth";
+import { createSessionToken, SESSION_COOKIE, getStaticAdmins } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { notifyFailedLoginAttempts } from "@/lib/whatsapp-notify";
 
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const ip = getIp(request);
   const userAgent = request.headers.get("user-agent") ?? "";
 
-  const admin = STATIC_ADMINS.find((a) => a.email === email && a.password === password);
+  const admin = getStaticAdmins().find((a) => a.email === email && a.password === password);
 
   await prisma.loginAttempt.create({ data: { email, ip, success: !!admin } });
 
@@ -32,7 +32,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
   }
 
-  const token = createSessionToken({ email: admin.email, name: admin.name, role: admin.role });
+  let token: string;
+  try {
+    token = createSessionToken({ email: admin.email, name: admin.name, role: admin.role });
+  } catch (err) {
+    console.error("[admin/login] Falta ADMIN_SECRET:", err);
+    return NextResponse.json({ error: "El login no está configurado en el servidor" }, { status: 500 });
+  }
 
   const response = NextResponse.json({ ok: true, role: admin.role });
   response.cookies.set(SESSION_COOKIE, token, {

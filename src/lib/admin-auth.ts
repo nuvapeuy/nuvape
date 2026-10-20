@@ -1,10 +1,15 @@
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 export const SESSION_COOKIE = "nuvape_admin_session";
 
-const SECRET = process.env.ADMIN_SESSION_SECRET ?? "nuvape-dev-secret";
+const IS_PROD = process.env.NODE_ENV === "production";
 
-export type AdminRole = "ADMIN" | "OPERATOR";
+// En producción no hay valores por defecto: si falta la variable, nadie puede iniciar sesión.
+function getSecret(): string | null {
+  return process.env.ADMIN_SECRET || (IS_PROD ? null : "nuvape-dev-secret");
+}
+
+export type AdminRole = "ADMIN";
 
 export type AdminSession = {
   email: string;
@@ -12,21 +17,25 @@ export type AdminSession = {
   role: AdminRole;
 };
 
-function sign(payload: string) {
-  return createHmac("sha256", SECRET).update(payload).digest("hex");
+function sign(payload: string, secret: string) {
+  return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
 export function createSessionToken(session: AdminSession): string {
+  const secret = getSecret();
+  if (!secret) throw new Error("Falta ADMIN_SECRET");
   const payload = Buffer.from(JSON.stringify(session)).toString("base64url");
-  const signature = sign(payload);
-  return `${payload}.${signature}`;
+  return `${payload}.${sign(payload, secret)}`;
 }
 
 export function verifySessionToken(token: string | undefined): AdminSession | null {
-  if (!token) return null;
+  const secret = getSecret();
+  if (!token || !secret) return null;
   const [payload, signature] = token.split(".");
   if (!payload || !signature) return null;
-  if (sign(payload) !== signature) return null;
+  const expected = Buffer.from(sign(payload, secret));
+  const received = Buffer.from(signature);
+  if (expected.length !== received.length || !timingSafeEqual(expected, received)) return null;
   try {
     return JSON.parse(Buffer.from(payload, "base64url").toString("utf-8")) as AdminSession;
   } catch {
@@ -36,17 +45,10 @@ export function verifySessionToken(token: string | undefined): AdminSession | nu
 
 type StaticAdmin = AdminSession & { password: string };
 
-export const STATIC_ADMINS: StaticAdmin[] = [
-  {
-    email: process.env.ADMIN_EMAIL ?? "admin@nuvape.com",
-    password: process.env.ADMIN_PASSWORD ?? "nuvape2026",
-    name: "Administrador",
-    role: "ADMIN",
-  },
-  {
-    email: process.env.OPERATOR_EMAIL ?? "operador@nuvape.com",
-    password: process.env.OPERATOR_PASSWORD ?? "operador2026",
-    name: "Operador",
-    role: "OPERATOR",
-  },
-];
+// Único usuario del panel. En producción sale solo de ADMIN_EMAIL / ADMIN_PASSWORD.
+export function getStaticAdmins(): StaticAdmin[] {
+  const email = process.env.ADMIN_EMAIL || (IS_PROD ? undefined : "admin@nuvape.com");
+  const password = process.env.ADMIN_PASSWORD || (IS_PROD ? undefined : "nuvape2026");
+  if (!email || !password) return [];
+  return [{ email, password, name: "Administrador", role: "ADMIN" }];
+}

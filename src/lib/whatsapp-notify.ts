@@ -2,6 +2,16 @@ import { Resend } from "resend";
 
 const LOW_STOCK_THRESHOLD = 3;
 
+// Los datos vienen del cliente (checkout) o de un atacante (login): nunca interpolarlos en HTML sin escapar.
+function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
 }
@@ -16,8 +26,8 @@ export async function notifyLowStockByWhatsApp(products: { name: string; stock: 
   if (low.length === 0 && out.length === 0) return;
 
   const lines: string[] = [];
-  if (out.length > 0) lines.push(`<b>Sin stock:</b><br>${out.map((p) => `• ${p.name}`).join("<br>")}`);
-  if (low.length > 0) lines.push(`<b>Stock bajo (≤${LOW_STOCK_THRESHOLD}):</b><br>${low.map((p) => `• ${p.name} — ${p.stock} restantes`).join("<br>")}`);
+  if (out.length > 0) lines.push(`<b>Sin stock:</b><br>${out.map((p) => `• ${esc(p.name)}`).join("<br>")}`);
+  if (low.length > 0) lines.push(`<b>Stock bajo (≤${LOW_STOCK_THRESHOLD}):</b><br>${low.map((p) => `• ${esc(p.name)} — ${p.stock} restantes`).join("<br>")}`);
 
   await getResend().emails.send({
     from: "NUVAPE <onboarding@resend.dev>",
@@ -75,10 +85,10 @@ export async function notifyFailedLoginAttempts(ip: string, email: string, count
       <h2>🚨 Alerta de seguridad NUVAPE</h2>
       <p>Se detectaron <b>${count} intentos fallidos</b> de acceso al panel de administración.</p>
       <table style="border-collapse:collapse;margin-top:12px">
-        <tr><td style="padding:4px 12px 4px 0;color:#888">Email usado</td><td style="padding:4px 0"><b>${email}</b></td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#888">IP</td><td style="padding:4px 0"><b>${ip}</b></td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#888">Ubicación</td><td style="padding:4px 0"><b>${location}</b></td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#888">Proveedor</td><td style="padding:4px 0"><b>${isp}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#888">Email usado</td><td style="padding:4px 0"><b>${esc(email)}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#888">IP</td><td style="padding:4px 0"><b>${esc(ip)}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#888">Ubicación</td><td style="padding:4px 0"><b>${esc(location)}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#888">Proveedor</td><td style="padding:4px 0"><b>${esc(isp)}</b></td></tr>
         <tr><td style="padding:4px 12px 4px 0;color:#888">Dispositivo</td><td style="padding:4px 0"><b>${device}</b></td></tr>
         <tr><td style="padding:4px 12px 4px 0;color:#888">Fecha</td><td style="padding:4px 0"><b>${new Date().toLocaleString("es-UY", { timeZone: "America/Montevideo" })}</b></td></tr>
       </table>
@@ -106,19 +116,19 @@ export async function notifyNewOrderByWhatsApp(order: OrderNotificationInput) {
     return;
   }
 
-  const itemsHtml = order.items.map((i) => `<li>${i.quantity}x ${i.name}</li>`).join("");
+  const itemsHtml = order.items.map((i) => `<li>${esc(i.quantity)}x ${esc(i.name)}</li>`).join("");
   const deliveryText = order.deliveryType === "DOMICILIO" ? "Envío a domicilio" : "Envío interior / DAC";
   const paymentText = order.paymentMethod === "CASH" ? "Efectivo contra entrega" : "Transferencia Itaú";
 
   const html = `
     <h2>🛒 Nuevo pedido en NUVAPE</h2>
-    <p><b>Cliente:</b> ${order.customerName}</p>
-    <p><b>Teléfono:</b> ${order.phone}</p>
-    <p><b>Dirección:</b> ${order.address}${order.city ? `, ${order.city}` : ""}</p>
+    <p><b>Cliente:</b> ${esc(order.customerName)}</p>
+    <p><b>Teléfono:</b> ${esc(order.phone)}</p>
+    <p><b>Dirección:</b> ${esc(order.address)}${order.city ? `, ${esc(order.city)}` : ""}</p>
     <p><b>Entrega:</b> ${deliveryText}</p>
     <p><b>Pago:</b> ${paymentText}</p>
     <ul>${itemsHtml}</ul>
-    <p><b>Total: $${order.total.toLocaleString("es-AR")}</b></p>
+    <p><b>Total: $${esc(Number(order.total).toLocaleString("es-AR"))}</b></p>
   `;
 
   const res = await getResend().emails.send({

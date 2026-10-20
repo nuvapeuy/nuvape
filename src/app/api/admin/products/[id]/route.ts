@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin();
+  if (auth instanceof NextResponse) return auth;
   const { id } = await params;
   const body = await request.json() as {
     stock?: number;
@@ -72,6 +75,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin();
+  if (auth instanceof NextResponse) return auth;
   const { id } = await params;
   try {
     await prisma.product.update({ where: { id }, data: { active: false } });

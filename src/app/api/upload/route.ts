@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/require-admin";
 import { writeFile } from "fs/promises";
 import path from "path";
 
@@ -6,6 +7,8 @@ const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
 
 export async function POST(request: Request) {
+  const auth = await requireAdmin();
+  if (auth instanceof NextResponse) return auth;
   const formData = await request.formData();
   const file = formData.get("file");
 
