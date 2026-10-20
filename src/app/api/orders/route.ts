@@ -58,7 +58,7 @@ async function buildLines(items: OrderItemInput[]): Promise<Line[]> {
 
   const getActive = (id: string) => {
     const p = byId.get(id);
-    if (!p || !p.active) throw new OrderError("Uno de los productos ya no está disponible. Revisá tu carrito.");
+    if (!p || !p.active || !p.brand.active) throw new OrderError("Uno de los productos ya no está disponible. Revisá tu carrito.");
     return p;
   };
 

@@ -46,6 +46,8 @@ model Brand {
   name      String    @unique
   slug      String    @unique
   logoUrl   String?
+  // Una marca inactiva no aparece en la tienda (catálogo, ficha, sitemap ni pedidos).
+  active    Boolean   @default(false)
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

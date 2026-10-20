@@ -12,6 +12,7 @@ import {
   Megaphone,
   HelpCircle,
   ShieldAlert,
+  Tag,
 } from "lucide-react";
 import type { AdminSession } from "@/lib/admin-auth";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ const LINKS = [
   { href: "/admin/pedidos", label: "Pedidos", icon: ShoppingBag },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/productos", label: "Productos", icon: Package },
+  { href: "/admin/marcas", label: "Marcas", icon: Tag },
   { href: "/admin/stock", label: "Stock", icon: BarChart2 },
   { href: "/admin/novedades", label: "Novedades", icon: Megaphone },
   { href: "/admin/faq", label: "FAQ", icon: HelpCircle },

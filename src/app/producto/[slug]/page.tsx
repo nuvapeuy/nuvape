@@ -1,12 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getProductBySlug, getProducts } from "@/lib/products";
+import { getProductBySlug } from "@/lib/products";
 import { ProductDetail } from "@/components/product-detail";
 
-export async function generateStaticParams() {
-  const products = await getProducts();
-  return products.map((p) => ({ slug: p.slug }));
-}
+// Siempre fresco: stock, precio y si el producto/marca sigue activo (antes quedaba congelado desde el build).
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

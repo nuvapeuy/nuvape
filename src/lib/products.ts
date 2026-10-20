@@ -1,5 +1,13 @@
 import { prisma } from "./prisma";
+import type { Prisma } from "@prisma/client";
 import type { MockProduct } from "./mock-data";
+
+// Qué ve la tienda pública: productos activos de marcas activas.
+// Toda consulta pública de productos tiene que pasar por acá.
+export const publicProductWhere = {
+  active: true,
+  brand: { active: true },
+} satisfies Prisma.ProductWhereInput;
 
 function mapProduct(p: any): MockProduct {
   return {
@@ -30,7 +38,7 @@ const include = {
 
 export async function getProducts(): Promise<MockProduct[]> {
   const products = await prisma.product.findMany({
-    where: { active: true },
+    where: publicProductWhere,
     include,
     orderBy: { createdAt: "asc" },
   });
@@ -38,14 +46,18 @@ export async function getProducts(): Promise<MockProduct[]> {
 }
 
 export async function getProductBySlug(slug: string): Promise<MockProduct | null> {
-  const p = await prisma.product.findUnique({ where: { slug }, include });
+  const p = await prisma.product.findFirst({ where: { slug, ...publicProductWhere }, include });
   if (!p) return null;
   return mapProduct(p);
 }
 
 export async function getAllCategories() {
   return prisma.category.findMany({
-    select: { id: true, name: true, _count: { select: { products: true } } },
+    select: {
+      id: true,
+      name: true,
+      _count: { select: { products: { where: { product: publicProductWhere } } } },
+    },
     orderBy: { name: "asc" },
   });
 }
