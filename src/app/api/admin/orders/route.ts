@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
+import { brandNamesByProductId } from "@/lib/products";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -41,6 +42,8 @@ export async function POST(request: Request) {
   }
 
   try {
+    const isPromo = (productId?: string) => !productId || productId.startsWith("promo-");
+    const brands = await brandNamesByProductId(body.items.filter((i) => !isPromo(i.productId)).map((i) => i.productId));
     const order = await prisma.order.create({
       data: {
         subtotal: body.subtotal,
@@ -62,10 +65,11 @@ export async function POST(request: Request) {
         },
         items: {
           create: body.items.map((item) => {
-            const isPromo = !item.productId || item.productId.startsWith("promo-");
+            const promo = isPromo(item.productId);
             return {
-              ...(isPromo ? {} : { productId: item.productId }),
+              ...(promo ? {} : { productId: item.productId }),
               productName: item.name,
+              brandName: promo ? null : brands.get(item.productId) ?? null,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
             };

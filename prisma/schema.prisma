@@ -231,6 +231,8 @@ model OrderItem {
   product     Product? @relation(fields: [productId], references: [id])
   productId   String?
   productName String?
+  // Copia de Brand.name al momento del pedido: distingue el mismo sabor de dos marcas.
+  brandName   String?
   quantity    Int
   unitPrice   Decimal  @db.Decimal(10, 2)
 }

@@ -12,6 +12,7 @@ type OrderItem = {
   quantity: number;
   unitPrice: number;
   productName: string | null;
+  brandName: string | null;
   product: { name: string } | null;
 };
 
@@ -30,7 +31,7 @@ type Order = {
 };
 
 type Product = { id: string; name: string; brand: string; price: number; stock: number };
-type FormItem = { productId: string; name: string; quantity: number; unitPrice: number };
+type FormItem = { productId: string; name: string; brandName?: string | null; quantity: number; unitPrice: number };
 type CustomerOption = { id: string; name: string; firstName: string; lastName: string; phone: string; address: string; city: string };
 
 const PROMOS = SHARED_PROMOS.map((p) => ({ id: p.id, label: p.title, brandName: p.brandName, qty: p.qty, price: p.price }));
@@ -190,6 +191,7 @@ export default function AdminOrdersPage() {
     const mapped = o.items.map((i) => ({
       productId: i.productId ?? `promo-exist-${Math.random()}`,
       name: itemDisplayName(i),
+      brandName: i.brandName,
       quantity: i.quantity,
       unitPrice: Number(i.unitPrice),
     }));
@@ -220,7 +222,7 @@ export default function AdminOrdersPage() {
             city: editForm.city,
           },
           customerId: editOrder.customer.id,
-          items: editItems.map((i) => ({ productId: i.productId, productName: i.name, quantity: i.quantity, unitPrice: i.unitPrice })),
+          items: editItems.map((i) => ({ productId: i.productId, productName: i.name, brandName: i.brandName, quantity: i.quantity, unitPrice: i.unitPrice })),
           subtotal, shippingCost, total,
         }),
       });
@@ -342,6 +344,7 @@ export default function AdminOrdersPage() {
                         return (
                           <div key={idx}>
                             <span className="text-white font-medium block">{i.quantity}x {title}</span>
+                            {i.brandName && <span className="text-[10px] uppercase tracking-wide text-muted-foreground block">{i.brandName}</span>}
                             {flavors && (
                               <>
                                 {expanded

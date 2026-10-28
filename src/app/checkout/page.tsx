@@ -215,6 +215,7 @@ function CheckoutInner() {
                   {item.imageUrl && <Image src={item.imageUrl} alt={item.name} fill className="object-contain p-1" />}
                 </div>
                 <div className="flex-1">
+                  {item.brand && <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{item.brand}</p>}
                   <p className="text-sm font-medium text-white">{item.name}</p>
                   <div className="mt-1 flex items-center gap-2">
                     <button

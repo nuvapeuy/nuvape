@@ -165,6 +165,7 @@ export function ProductDetail({ product }: { product: MockProduct }) {
                   {
                     productId: product.id,
                     name: product.name,
+                    brand: product.brand,
                     slug: product.slug,
                     price: product.price,
                     imageUrl: product.imageUrl || null,

@@ -24,7 +24,7 @@ type OrderPayload = {
   items: OrderItemInput[];
 };
 
-type Line = { productId: string; productName: string; quantity: number; unitPrice: number };
+type Line = { productId: string; productName: string; brandName: string; quantity: number; unitPrice: number };
 
 const DELIVERY_TYPES = ["DOMICILIO", "INTERIOR_DAC"] as const;
 const PAYMENT_METHODS = ["CASH", "BANK_TRANSFER"] as const;
@@ -81,11 +81,11 @@ async function buildLines(items: OrderItemInput[]): Promise<Line[]> {
         if (p.brand.name !== promo.brandName) {
           throw new OrderError(`El ${promo.title} solo admite productos ${promo.brandName}.`);
         }
-        lines.push({ productId: p.id, productName: `[${promo.title}] ${p.name}`, quantity: count * qty, unitPrice });
+        lines.push({ productId: p.id, productName: `[${promo.title}] ${p.name}`, brandName: p.brand.name, quantity: count * qty, unitPrice });
       }
     } else {
       const p = getActive(String(item.productId));
-      lines.push({ productId: p.id, productName: p.name, quantity: qty, unitPrice: Number(p.price) });
+      lines.push({ productId: p.id, productName: p.name, brandName: p.brand.name, quantity: qty, unitPrice: Number(p.price) });
     }
   }
 
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
       city: customer.city,
       deliveryType,
       paymentMethod,
-      items: lines.map((l) => ({ name: l.productName, quantity: l.quantity })),
+      items: lines.map((l) => ({ name: `${l.brandName} · ${l.productName}`, quantity: l.quantity })),
       total,
     });
   } catch (err) {

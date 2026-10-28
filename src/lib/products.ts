@@ -61,3 +61,14 @@ export async function getAllCategories() {
     orderBy: { name: "asc" },
   });
 }
+
+// Marca actual de cada producto, para guardarla en los ítems de pedidos que arma el admin.
+// La decide la BD, no lo que mande el cliente.
+export async function brandNamesByProductId(ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const products = await prisma.product.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, brand: { select: { name: true } } },
+  });
+  return new Map(products.map((p) => [p.id, p.brand.name]));
+}
