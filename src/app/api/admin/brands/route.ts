@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/slug";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -23,11 +24,7 @@ export async function POST(request: Request) {
   const cleanName = name?.trim().toUpperCase();
   if (!cleanName) return NextResponse.json({ error: "Falta el nombre" }, { status: 400 });
 
-  const slug = cleanName
-    .toLowerCase()
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+  const slug = slugify(cleanName);
 
   const existing = await prisma.brand.findFirst({ where: { OR: [{ name: cleanName }, { slug }] } });
   if (existing) return NextResponse.json({ error: "Ya existe una marca con ese nombre" }, { status: 409 });
