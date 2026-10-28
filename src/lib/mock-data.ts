@@ -36,6 +36,7 @@ export type MockProduct = {
   slug: string;
   name: string;
   brand: string;
+  brandColor?: string | null;
   price: number;
   puffs: number;
   nicotineLevel: number;

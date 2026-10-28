@@ -85,6 +85,8 @@
 
   /* Brand neon accents — disciplined to 2 colors + red for urgency/sold-out */
   --neon-purple: #b026ff;
+  /* Acento de la marca del producto; cada producto lo pisa con Brand.color (ver brand-theme.ts) */
+  --brand-accent: var(--neon-purple);
   --neon-green: #39ff88;
   --neon-red: #ff3355;
   /* Reserved exclusively for "marca con stock disponible" signal in the brands strip */
@@ -150,6 +152,12 @@
   }
   .glow-text-purple {
     text-shadow: 0 0 12px rgba(176, 38, 255, 0.7);
+  }
+  .glow-brand {
+    box-shadow: 0 0 18px 2px color-mix(in srgb, var(--brand-accent) 35%, transparent), 0 0 4px color-mix(in srgb, var(--brand-accent) 60%, transparent);
+  }
+  .glow-text-brand {
+    text-shadow: 0 0 12px color-mix(in srgb, var(--brand-accent) 70%, transparent);
   }
   .glass {
     background: rgba(17, 17, 17, 0.55);
