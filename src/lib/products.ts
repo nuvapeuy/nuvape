@@ -15,6 +15,7 @@ function mapProduct(p: any): MockProduct {
     slug: p.slug,
     name: p.name,
     brand: p.brand.name,
+    brandColor: p.brand.color ?? null,
     price: Number(p.price),
     puffs: p.puffs,
     nicotineLevel: Number(p.nicotineLevel),
@@ -49,6 +50,25 @@ export async function getProductBySlug(slug: string): Promise<MockProduct | null
   const p = await prisma.product.findFirst({ where: { slug, ...publicProductWhere }, include });
   if (!p) return null;
   return mapProduct(p);
+}
+
+// Los otros sabores del mismo modelo (misma marca y cantidad de puffs) que se pueden comprar ya.
+// El producto actual va siempre, aunque esté agotado, para marcarlo en la lista.
+export type ModelFlavor = { slug: string; label: string };
+
+export async function getModelFlavors(product: MockProduct): Promise<ModelFlavor[]> {
+  const products = await prisma.product.findMany({
+    where: {
+      ...publicProductWhere,
+      brand: { ...publicProductWhere.brand, name: product.brand },
+      puffs: product.puffs,
+      OR: [{ stock: { gt: 0 } }, { id: product.id }],
+    },
+    select: { slug: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  // "Miami Mint 40K" → "Miami Mint": los puffs ya están en el título de la ficha.
+  return products.map((p) => ({ slug: p.slug, label: p.name.replace(/\s+\d+K$/i, "") }));
 }
 
 export async function getAllCategories() {

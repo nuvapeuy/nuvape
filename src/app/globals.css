@@ -85,6 +85,8 @@
 
   /* Brand neon accents — disciplined to 2 colors + red for urgency/sold-out */
   --neon-purple: #b026ff;
+  /* Acento de la marca del producto; cada producto lo pisa con Brand.color (ver brand-theme.ts) */
+  --brand-accent: var(--neon-purple);
   --neon-green: #39ff88;
   --neon-red: #ff3355;
   /* Reserved exclusively for "marca con stock disponible" signal in the brands strip */
@@ -141,16 +143,32 @@
   }
 }
 
+/* Con @utility (y no .clase en @layer) Tailwind v4 genera hover:glow-*, si no el hover no hace nada. */
+@utility glow-purple {
+  box-shadow: 0 0 18px 2px rgba(176, 38, 255, 0.35), 0 0 4px rgba(176, 38, 255, 0.6);
+}
+@utility glow-green {
+  box-shadow: 0 0 18px 2px rgba(57, 255, 136, 0.35), 0 0 4px rgba(57, 255, 136, 0.6);
+}
+@utility glow-text-purple {
+  text-shadow: 0 0 12px rgba(176, 38, 255, 0.7);
+}
+@utility glow-brand {
+  box-shadow: 0 0 18px 2px color-mix(in srgb, var(--brand-accent) 35%, transparent), 0 0 4px color-mix(in srgb, var(--brand-accent) 60%, transparent);
+}
+@utility glow-text-brand {
+  text-shadow: 0 0 12px color-mix(in srgb, var(--brand-accent) 70%, transparent);
+}
+/* Latido suave del sabor seleccionado en la ficha. */
+@utility pulse-brand {
+  animation: pulse-brand 2.4s ease-in-out infinite;
+}
+@keyframes pulse-brand {
+  0%, 100% { box-shadow: 0 0 6px 0 color-mix(in srgb, var(--brand-accent) 35%, transparent); }
+  50% { box-shadow: 0 0 16px 3px color-mix(in srgb, var(--brand-accent) 60%, transparent); }
+}
+
 @layer utilities {
-  .glow-purple {
-    box-shadow: 0 0 18px 2px rgba(176, 38, 255, 0.35), 0 0 4px rgba(176, 38, 255, 0.6);
-  }
-  .glow-green {
-    box-shadow: 0 0 18px 2px rgba(57, 255, 136, 0.35), 0 0 4px rgba(57, 255, 136, 0.6);
-  }
-  .glow-text-purple {
-    text-shadow: 0 0 12px rgba(176, 38, 255, 0.7);
-  }
   .glass {
     background: rgba(17, 17, 17, 0.55);
     backdrop-filter: blur(16px) saturate(140%);

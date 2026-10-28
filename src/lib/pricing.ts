@@ -16,7 +16,8 @@ export type PromoDef = {
   qty: number;
   price: number;
   badge: string;
-  image: string;
+  // Foto del pack. Sin foto propia se usa la del primer producto disponible de la marca.
+  image?: string;
 };
 
 export const PROMOS: PromoDef[] = [
@@ -38,7 +39,6 @@ export const PROMOS: PromoDef[] = [
     qty: 5,
     price: 5000,
     badge: "AHORRÁS $750",
-    image: "/promos/Elfbar PROMO X3.png",
   },
 ];
 

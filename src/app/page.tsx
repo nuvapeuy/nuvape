@@ -9,9 +9,9 @@ import { BrandsStrip } from "@/components/brands-strip";
 import { getProducts, getAllCategories } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
+import { brandAccentStyle } from "@/lib/brand-theme";
 
 const WHATSAPP_NUMBER = "59892052416";
-const HERO_SLUG = "miami-mint-40k";
 
 const CATEGORY_EMOJI: Record<string, string> = {
   Mentolados: "❄️",
@@ -28,7 +28,10 @@ export default async function Home() {
     getAllCategories(),
     prisma.banner.findMany({ where: { active: true }, orderBy: { position: "asc" } }),
   ]);
-  const hero = allProducts.find((p) => p.slug === HERO_SLUG) ?? allProducts[0];
+  // Destacado: el primer HOT con stock; si no hay, cualquiera con stock. Se elige desde los flags del admin.
+  const inStock = allProducts.filter((p) => p.stock > 0);
+  const hero = inStock.find((p) => p.flags.includes("HOT")) ?? inStock[0] ?? allProducts[0];
+  const brandCount = new Set(allProducts.map((p) => p.brand)).size;
 
   const bestSellers = allProducts.filter((p) => p.flags.includes("HOT"));
   const CATEGORY_ORDER = ["Mentolados", "Frutales", "Cítricos", "Dulces"];
@@ -46,10 +49,10 @@ export default async function Home() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(176,38,255,0.18),transparent_50%),radial-gradient(circle_at_80%_10%,rgba(57,255,136,0.08),transparent_50%)]" />
         <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-2">
-          <div className="relative mx-auto aspect-square w-full max-w-md">
-            <div className="absolute inset-0 rounded-full bg-[var(--neon-purple)]/20 blur-3xl" />
-            {hero.imageUrl ? (
-              <Image src={hero.imageUrl} alt={hero.name} fill className="relative object-contain drop-shadow-[0_0_40px_rgba(176,38,255,0.45)]" priority />
+          <div style={brandAccentStyle(hero?.brandColor)} className="relative mx-auto aspect-square w-full max-w-md">
+            <div className="absolute inset-0 rounded-full bg-[var(--brand-accent)]/20 blur-3xl" />
+            {hero?.imageUrl ? (
+              <Image src={hero.imageUrl} alt={hero.name} fill className="relative object-contain drop-shadow-[0_0_40px_color-mix(in_srgb,var(--brand-accent)_45%,transparent)]" priority />
             ) : (
               <div className="relative flex h-full items-center justify-center text-sm text-muted-foreground">IMG</div>
             )}
@@ -63,21 +66,25 @@ export default async function Home() {
               VAPES PREMIUM
             </h1>
             <div className="mt-5 flex justify-center gap-6 lg:justify-start">
-              <Stat value="+5" label="Sabores" />
-              <Stat value="1" label="Marca" />
+              <Stat value={String(inStock.length)} label="Sabores" />
+              <Stat value={String(brandCount)} label={brandCount === 1 ? "Marca" : "Marcas"} />
               <Stat value="24/7" label="Atención" />
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-              {hero.flags.map((flag) => (
-                <FlagPill key={flag} flag={flag} />
-              ))}
-            </div>
-            <h2 className="mt-3 text-2xl font-bold text-white">{hero.name}</h2>
-            <p className="text-sm text-muted-foreground">{hero.brand} · {hero.puffs.toLocaleString("es-AR")} puffs</p>
-            <p className="mt-2 font-heading text-3xl font-extrabold text-white">
-              ${hero.price.toLocaleString("es-AR")}
-            </p>
+            {hero && (
+              <>
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                  {hero.flags.map((flag) => (
+                    <FlagPill key={flag} flag={flag} />
+                  ))}
+                </div>
+                <h2 className="mt-3 text-2xl font-bold text-white">{hero.name}</h2>
+                <p className="text-sm text-muted-foreground">{hero.brand} · {hero.puffs.toLocaleString("es-AR")} puffs</p>
+                <p className="mt-2 font-heading text-3xl font-extrabold text-white">
+                  ${hero.price.toLocaleString("es-AR")}
+                </p>
+              </>
+            )}
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start">
               <Link

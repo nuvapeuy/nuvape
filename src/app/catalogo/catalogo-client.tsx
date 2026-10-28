@@ -13,6 +13,7 @@ import { Search, SlidersHorizontal, ChevronDown, X, Plus, Minus } from "lucide-r
 import { useCartStore } from "@/lib/cart-store";
 import { toast } from "sonner";
 import { PROMOS, type PromoDef } from "@/lib/pricing";
+import { brandAccentStyle } from "@/lib/brand-theme";
 
 const MAX_PRICE = 3000;
 
@@ -145,13 +146,12 @@ export default function CatalogoClient({ products, allCategories = [] }: { produ
           <div id="promociones">
             <h2 className="mb-4 text-xl font-bold text-white">🎁 Promociones vigentes</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {PROMOS.map((promo) => (
-                <PromoCard
-                  key={promo.id}
-                  promo={promo}
-                  availableProducts={products.filter((p) => p.stock > 0 && p.brand === promo.brandName)}
-                />
-              ))}
+              {/* Un pack solo se ofrece si su marca está publicada y tiene algo en stock. */}
+              {PROMOS.map((promo) => ({ promo, available: products.filter((p) => p.stock > 0 && p.brand === promo.brandName) }))
+                .filter(({ available }) => available.length > 0)
+                .map(({ promo, available }) => (
+                  <PromoCard key={promo.id} promo={promo} availableProducts={available} />
+                ))}
             </div>
           </div>
 
@@ -185,7 +185,8 @@ type PromoCardProps = {
 };
 
 function PromoCard({ promo, availableProducts }: PromoCardProps) {
-  const { title, description, price: totalPrice, qty, badge, image } = promo;
+  const { title, description, price: totalPrice, qty, badge } = promo;
+  const image = promo.image ?? availableProducts.find((p) => p.imageUrl)?.imageUrl ?? "";
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<MockProduct[]>([]);
   const addItem = useCartStore((s) => s.addItem);
@@ -209,7 +210,7 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
       brand: promo.brandName,
       slug: "",
       price: totalPrice,
-      imageUrl: image,
+      imageUrl: image || null,
       // Tope de packs iguales según el producto elegido con menos stock (el servidor lo vuelve a validar).
       stock: Math.max(1, Math.min(...selected.map((p) => Math.floor(p.stock / selected.filter((s) => s.id === p.id).length)))),
       pack: { promoId: promo.id, productIds: selected.map((p) => p.id) },
@@ -220,10 +221,10 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
   };
 
   return (
-    <>
+    <div style={brandAccentStyle(availableProducts[0]?.brandColor)}>
       <div className="glass relative flex items-center gap-5 overflow-hidden rounded-2xl p-5">
         <div className="relative h-28 w-28 shrink-0">
-          <Image src={image} alt={title} fill className="object-contain" />
+          {image && <Image src={image} alt={title} fill className="object-contain" />}
         </div>
         <div className="flex-1">
           <span className="inline-block rounded-full bg-[var(--neon-green)]/10 px-2.5 py-0.5 text-[11px] font-bold text-[var(--neon-green)] ring-1 ring-[var(--neon-green)]/30">
@@ -231,10 +232,10 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
           </span>
           <h3 className="mt-1 text-lg font-bold text-white">{title}</h3>
           <p className="text-sm text-muted-foreground">{description}</p>
-          <p className="mt-2 text-2xl font-extrabold text-[var(--neon-purple)]">${totalPrice.toLocaleString("es-AR")}</p>
+          <p className="mt-2 text-2xl font-extrabold text-[var(--brand-accent)]">${totalPrice.toLocaleString("es-AR")}</p>
           <button
             onClick={() => { setSelected([]); setOpen(true); }}
-            className="mt-3 w-full rounded-lg bg-[var(--neon-purple)] py-2 text-sm font-semibold text-white hover:bg-[var(--neon-purple)]/90 transition-colors"
+            className="mt-3 w-full rounded-lg bg-[var(--brand-accent)] py-2 text-sm font-semibold text-white hover:bg-[var(--brand-accent)]/90 transition-colors"
           >
             Armar pack
           </button>
@@ -254,7 +255,7 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
             {/* Seleccionados */}
             <div className="mb-4 flex flex-wrap gap-2 min-h-[36px]">
               {selected.map((p, i) => (
-                <span key={i} className="flex items-center gap-1 rounded-full bg-[var(--neon-purple)]/20 px-3 py-1 text-xs text-white ring-1 ring-[var(--neon-purple)]/40">
+                <span key={i} className="flex items-center gap-1 rounded-full bg-[var(--brand-accent)]/20 px-3 py-1 text-xs text-white ring-1 ring-[var(--brand-accent)]/40">
                   {p.name}
                   <button onClick={() => remove(i)}><X className="h-3 w-3" /></button>
                 </span>
@@ -284,7 +285,7 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
                       <p className="text-sm font-medium text-white">{p.name}</p>
                       <p className="text-xs text-muted-foreground">{remaining} disponibles</p>
                     </div>
-                    <Plus className="h-4 w-4 text-[var(--neon-purple)]" />
+                    <Plus className="h-4 w-4 text-[var(--brand-accent)]" />
                   </button>
                 );
               })}
@@ -293,14 +294,14 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
             <button
               onClick={confirm}
               disabled={selected.length < qty}
-              className="mt-4 w-full rounded-lg bg-[var(--neon-purple)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--neon-purple)]/90 disabled:opacity-40 transition-colors"
+              className="mt-4 w-full rounded-lg bg-[var(--brand-accent)] py-2.5 text-sm font-semibold text-white hover:bg-[var(--brand-accent)]/90 disabled:opacity-40 transition-colors"
             >
               Agregar pack al carrito — ${totalPrice.toLocaleString("es-AR")}
             </button>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

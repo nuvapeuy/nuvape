@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getProductBySlug } from "@/lib/products";
+import { getProductBySlug, getModelFlavors } from "@/lib/products";
 import { ProductDetail } from "@/components/product-detail";
 
 // Siempre fresco: stock, precio y si el producto/marca sigue activo (antes quedaba congelado desde el build).
@@ -33,6 +33,7 @@ export default async function ProductPage({
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) notFound();
+  const modelFlavors = await getModelFlavors(product);
 
-  return <ProductDetail product={product} />;
+  return <ProductDetail product={product} modelFlavors={modelFlavors} />;
 }

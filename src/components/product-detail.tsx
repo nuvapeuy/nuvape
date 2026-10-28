@@ -2,16 +2,19 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { FlagPill } from "@/components/flag-pill";
 import { stockFlags, type MockProduct } from "@/lib/mock-data";
+import type { ModelFlavor } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/lib/cart-store";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { brandAccentStyle } from "@/lib/brand-theme";
 
 const WHATSAPP_NUMBER = "59892052416";
 
-export function ProductDetail({ product }: { product: MockProduct }) {
+export function ProductDetail({ product, modelFlavors }: { product: MockProduct; modelFlavors: ModelFlavor[] }) {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const addItem = useCartStore((s) => s.addItem);
@@ -33,7 +36,7 @@ export function ProductDetail({ product }: { product: MockProduct }) {
   const images = product.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : [];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+    <div style={brandAccentStyle(product.brandColor)} className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
         {/* Image gallery */}
         <div className="flex gap-4">
@@ -46,7 +49,7 @@ export function ProductDetail({ product }: { product: MockProduct }) {
                   onClick={() => setActiveImage(i)}
                   className={cn(
                     "relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border transition-colors",
-                    i === activeImage ? "border-[var(--neon-purple)]" : "border-white/10 hover:border-white/30"
+                    i === activeImage ? "border-[var(--brand-accent)]" : "border-white/10 hover:border-white/30"
                   )}
                 >
                   <Image src={img} alt={`${product.name} ${i + 1}`} fill className="object-contain p-1" />
@@ -66,7 +69,7 @@ export function ProductDetail({ product }: { product: MockProduct }) {
                 <FlagPill key={flag} flag={flag} />
               ))}
             </div>
-            <div className="absolute inset-10 rounded-full bg-[var(--neon-purple)]/15 blur-3xl" />
+            <div className="absolute inset-10 rounded-full bg-[var(--brand-accent)]/15 blur-3xl" />
             {images[activeImage] ? (
               <Image
                 src={images[activeImage]}
@@ -88,7 +91,7 @@ export function ProductDetail({ product }: { product: MockProduct }) {
                     onClick={() => setActiveImage(i)}
                     className={cn(
                       "h-1.5 rounded-full transition-all",
-                      i === activeImage ? "w-4 bg-[var(--neon-purple)]" : "w-1.5 bg-white/30"
+                      i === activeImage ? "w-4 bg-[var(--brand-accent)]" : "w-1.5 bg-white/30"
                     )}
                   />
                 ))}
@@ -103,7 +106,7 @@ export function ProductDetail({ product }: { product: MockProduct }) {
             {product.brand}
           </p>
           <h1 className="mt-2 text-3xl font-bold text-white">{product.name}</h1>
-          <p className="mt-4 text-3xl font-bold text-[var(--neon-purple)] glow-text-purple">
+          <p className="mt-4 text-3xl font-bold text-[var(--brand-accent)] glow-text-brand">
             ${product.price.toLocaleString("es-AR")}
           </p>
 
@@ -131,11 +134,25 @@ export function ProductDetail({ product }: { product: MockProduct }) {
               Sabores disponibles
             </p>
             <div className="flex flex-wrap gap-2">
-              {product.flavors.map((f) => (
-                <span key={f} className="rounded-full border border-white/10 px-3 py-1 text-xs text-muted-foreground">
-                  {f}
-                </span>
-              ))}
+              {modelFlavors.map((f) =>
+                f.slug === product.slug ? (
+                  <span
+                    key={f.slug}
+                    aria-current="page"
+                    className="rounded-full border border-[var(--brand-accent)] bg-[var(--brand-accent)]/15 px-3 py-1 text-xs font-semibold text-white glow-brand motion-safe:pulse-brand"
+                  >
+                    {f.label}
+                  </span>
+                ) : (
+                  <Link
+                    key={f.slug}
+                    href={`/producto/${f.slug}`}
+                    className="rounded-full border border-white/10 px-3 py-1 text-xs text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-[var(--brand-accent)]/60 hover:text-white hover:glow-brand"
+                  >
+                    {f.label}
+                  </Link>
+                )
+              )}
             </div>
           </div>
 
@@ -174,7 +191,7 @@ export function ProductDetail({ product }: { product: MockProduct }) {
                   quantity
                 )
               }
-              className="flex-1 bg-[var(--neon-purple)] text-white hover:bg-[var(--neon-purple)]/90 disabled:opacity-40"
+              className="flex-1 bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90 disabled:opacity-40"
             >
               {outOfStock ? "Agotado" : "Comprar"}
             </Button>

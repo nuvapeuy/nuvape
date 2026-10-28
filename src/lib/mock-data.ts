@@ -19,23 +19,13 @@ export const FLAG_COLORS: Record<string, string> = {
   QUEDAN_POCAS: "#ff3355",
 };
 
-// Marcas que trabajamos. `inStock: true` las resalta en amarillo en el strip de marcas
-// del home — editar acá (o desde el admin más adelante) según entre/salga stock.
-export type BrandStripEntry = { name: string; inStock: boolean };
-
-export const BRANDS_STRIP: BrandStripEntry[] = [
-  { name: "ELFBAR", inStock: true },
-  { name: "LOST MARY", inStock: false },
-  { name: "GEEK BAR", inStock: false },
-  { name: "VOZOL", inStock: false },
-  { name: "RANDM", inStock: false },
-];
 
 export type MockProduct = {
   id: string;
   slug: string;
   name: string;
   brand: string;
+  brandColor?: string | null;
   price: number;
   puffs: number;
   nicotineLevel: number;
