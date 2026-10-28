@@ -9,6 +9,7 @@ import { BrandsStrip } from "@/components/brands-strip";
 import { getProducts, getAllCategories } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
+import { brandAccentStyle } from "@/lib/brand-theme";
 
 const WHATSAPP_NUMBER = "59892052416";
 
@@ -48,10 +49,10 @@ export default async function Home() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(176,38,255,0.18),transparent_50%),radial-gradient(circle_at_80%_10%,rgba(57,255,136,0.08),transparent_50%)]" />
         <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-2">
-          <div className="relative mx-auto aspect-square w-full max-w-md">
-            <div className="absolute inset-0 rounded-full bg-[var(--neon-purple)]/20 blur-3xl" />
+          <div style={brandAccentStyle(hero?.brandColor)} className="relative mx-auto aspect-square w-full max-w-md">
+            <div className="absolute inset-0 rounded-full bg-[var(--brand-accent)]/20 blur-3xl" />
             {hero?.imageUrl ? (
-              <Image src={hero.imageUrl} alt={hero.name} fill className="relative object-contain drop-shadow-[0_0_40px_rgba(176,38,255,0.45)]" priority />
+              <Image src={hero.imageUrl} alt={hero.name} fill className="relative object-contain drop-shadow-[0_0_40px_color-mix(in_srgb,var(--brand-accent)_45%,transparent)]" priority />
             ) : (
               <div className="relative flex h-full items-center justify-center text-sm text-muted-foreground">IMG</div>
             )}

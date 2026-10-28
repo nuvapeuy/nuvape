@@ -139,7 +139,7 @@ export function ProductDetail({ product, modelFlavors }: { product: MockProduct;
                   <span
                     key={f.slug}
                     aria-current="page"
-                    className="rounded-full border border-[var(--brand-accent,var(--neon-purple))] bg-[var(--brand-accent,var(--neon-purple))]/15 px-3 py-1 text-xs font-semibold text-white"
+                    className="rounded-full border border-[var(--brand-accent)] bg-[var(--brand-accent)]/15 px-3 py-1 text-xs font-semibold text-white glow-brand motion-safe:pulse-brand"
                   >
                     {f.label}
                   </span>
@@ -147,7 +147,7 @@ export function ProductDetail({ product, modelFlavors }: { product: MockProduct;
                   <Link
                     key={f.slug}
                     href={`/producto/${f.slug}`}
-                    className="rounded-full border border-white/10 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-white/30 hover:text-white"
+                    className="rounded-full border border-white/10 px-3 py-1 text-xs text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-[var(--brand-accent)]/60 hover:text-white hover:glow-brand"
                   >
                     {f.label}
                   </Link>
