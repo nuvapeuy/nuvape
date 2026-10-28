@@ -15,6 +15,7 @@ function mapProduct(p: any): MockProduct {
     slug: p.slug,
     name: p.name,
     brand: p.brand.name,
+    brandColor: p.brand.color ?? null,
     price: Number(p.price),
     puffs: p.puffs,
     nicotineLevel: Number(p.nicotineLevel),

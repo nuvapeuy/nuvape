@@ -6,7 +6,7 @@ export async function GET() {
   const auth = await requireAdmin();
   if (auth instanceof NextResponse) return auth;
   const brands = await prisma.brand.findMany({
-    select: { id: true, name: true, slug: true, active: true, _count: { select: { products: { where: { active: true } } } } },
+    select: { id: true, name: true, slug: true, active: true, color: true, _count: { select: { products: { where: { active: true } } } } },
     orderBy: { name: "asc" },
   });
   return NextResponse.json(
