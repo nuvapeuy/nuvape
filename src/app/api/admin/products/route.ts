@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
+import { uniqueProductSlug } from "@/lib/slug";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -49,14 +50,9 @@ export async function POST(request: Request) {
       categoryNames?: string[];
     };
 
-    const slug = body.name
-      .toLowerCase()
-      .normalize("NFD").replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-
-    const existing = await prisma.product.findMany({ where: { slug: { startsWith: slug } }, select: { slug: true } });
-    const finalSlug = existing.length === 0 ? slug : `${slug}-${existing.length}`;
+    const brand = await prisma.brand.findUnique({ where: { id: body.brandId }, select: { slug: true } });
+    if (!brand) return NextResponse.json({ error: "Marca inexistente" }, { status: 400 });
+    const finalSlug = await uniqueProductSlug(brand.slug, body.name);
 
     const flagIds: string[] = [];
     if (body.flagNames?.length) {
