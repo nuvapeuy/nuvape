@@ -2,8 +2,10 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { FlagPill } from "@/components/flag-pill";
 import { stockFlags, type MockProduct } from "@/lib/mock-data";
+import type { ModelFlavor } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/lib/cart-store";
 import { Minus, Plus } from "lucide-react";
@@ -11,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 const WHATSAPP_NUMBER = "59892052416";
 
-export function ProductDetail({ product }: { product: MockProduct }) {
+export function ProductDetail({ product, modelFlavors }: { product: MockProduct; modelFlavors: ModelFlavor[] }) {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const addItem = useCartStore((s) => s.addItem);
@@ -131,11 +133,25 @@ export function ProductDetail({ product }: { product: MockProduct }) {
               Sabores disponibles
             </p>
             <div className="flex flex-wrap gap-2">
-              {product.flavors.map((f) => (
-                <span key={f} className="rounded-full border border-white/10 px-3 py-1 text-xs text-muted-foreground">
-                  {f}
-                </span>
-              ))}
+              {modelFlavors.map((f) =>
+                f.slug === product.slug ? (
+                  <span
+                    key={f.slug}
+                    aria-current="page"
+                    className="rounded-full border border-[var(--neon-purple)] bg-[var(--neon-purple)]/15 px-3 py-1 text-xs font-semibold text-white"
+                  >
+                    {f.label}
+                  </span>
+                ) : (
+                  <Link
+                    key={f.slug}
+                    href={`/producto/${f.slug}`}
+                    className="rounded-full border border-white/10 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-white/30 hover:text-white"
+                  >
+                    {f.label}
+                  </Link>
+                )
+              )}
             </div>
           </div>
 
