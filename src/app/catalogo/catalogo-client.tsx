@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { ProductCard } from "@/components/product-card";
-import { type MockProduct, flagLabel } from "@/lib/mock-data";
+import { type MockProduct, flagLabel, flavorLabel } from "@/lib/mock-data";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -203,7 +203,7 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
   };
 
   const confirm = () => {
-    const flavors = selected.map((p) => p.name.replace(/ 40K$/i, "")).join(", ");
+    const flavors = selected.map((p) => flavorLabel(p.name)).join(", ");
     addItem({
       productId: `promo-${promo.id}-${Date.now()}`,
       name: `${title} — ${flavors}`,

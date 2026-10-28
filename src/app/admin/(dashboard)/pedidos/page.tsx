@@ -34,7 +34,7 @@ type Product = { id: string; name: string; brand: string; price: number; stock: 
 type FormItem = { productId: string; name: string; brandName?: string | null; quantity: number; unitPrice: number };
 type CustomerOption = { id: string; name: string; firstName: string; lastName: string; phone: string; address: string; city: string };
 
-const PROMOS = SHARED_PROMOS.map((p) => ({ id: p.id, label: p.title, brandName: p.brandName, qty: p.qty, price: p.price }));
+const PROMOS = SHARED_PROMOS.map((p) => ({ id: p.id, label: `${p.title} ${p.brandName}`, brandName: p.brandName, qty: p.qty, price: p.price }));
 const MEETING_POINTS = ["Portones Shopping", "Nuevocentro Shopping", "Otro"];
 const EMPTY_FORM = { firstName: "", phone: "", address: "", city: "Montevideo", deliveryType: "DOMICILIO", paymentMethod: "CASH", meetingPoint: "Portones Shopping", discount: 0, notes: "" };
 
