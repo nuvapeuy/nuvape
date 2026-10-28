@@ -138,7 +138,7 @@ export function ProductDetail({ product, modelFlavors }: { product: MockProduct;
                   <span
                     key={f.slug}
                     aria-current="page"
-                    className="rounded-full border border-[var(--neon-purple)] bg-[var(--neon-purple)]/15 px-3 py-1 text-xs font-semibold text-white"
+                    className="rounded-full border border-[var(--brand-accent,var(--neon-purple))] bg-[var(--brand-accent,var(--neon-purple))]/15 px-3 py-1 text-xs font-semibold text-white"
                   >
                     {f.label}
                   </span>
