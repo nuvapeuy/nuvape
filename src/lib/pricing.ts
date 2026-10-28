@@ -40,6 +40,24 @@ export const PROMOS: PromoDef[] = [
     price: 5000,
     badge: "AHORRÁS $750",
   },
+  {
+    id: "lost-mary-x3",
+    title: "Pack x3",
+    description: "Llevate 3 LOST MARY MT35K a elección",
+    brandName: "LOST MARY",
+    qty: 3,
+    price: 3600,
+    badge: "AHORRÁS $150",
+  },
+  {
+    id: "lost-mary-x5",
+    title: "Pack x5",
+    description: "Llevate 5 LOST MARY MT35K a elección",
+    brandName: "LOST MARY",
+    qty: 5,
+    price: 5800,
+    badge: "AHORRÁS $450",
+  },
 ];
 
 export function findPromo(id: string) {

@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import type { Prisma } from "@prisma/client";
-import type { MockProduct } from "./mock-data";
+import { flavorLabel, type MockProduct } from "./mock-data";
 
 // Qué ve la tienda pública: productos activos de marcas activas.
 // Toda consulta pública de productos tiene que pasar por acá.
@@ -67,8 +67,8 @@ export async function getModelFlavors(product: MockProduct): Promise<ModelFlavor
     select: { slug: true, name: true },
     orderBy: { name: "asc" },
   });
-  // "Miami Mint 40K" → "Miami Mint": los puffs ya están en el título de la ficha.
-  return products.map((p) => ({ slug: p.slug, label: p.name.replace(/\s+\d+K$/i, "") }));
+  // Sin el modelo: los puffs ya están en el título de la ficha.
+  return products.map((p) => ({ slug: p.slug, label: flavorLabel(p.name) }));
 }
 
 export async function getAllCategories() {

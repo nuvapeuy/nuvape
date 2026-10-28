@@ -147,6 +147,11 @@ export const MOCK_PRODUCTS: MockProduct[] = [
   },
 ];
 
+// Nombre del sabor sin el modelo/puffs del final: "Miami Mint 40K" o "Purple Pixy MT35K" → "Miami Mint" / "Purple Pixy".
+export function flavorLabel(productName: string) {
+  return productName.replace(/\s+[a-z]*\d+k$/i, "");
+}
+
 export function flagLabel(flag: string) {
   const labels: Record<string, string> = {
     AGOTADO: "AGOTADO",
