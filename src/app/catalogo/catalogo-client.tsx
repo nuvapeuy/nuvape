@@ -145,13 +145,12 @@ export default function CatalogoClient({ products, allCategories = [] }: { produ
           <div id="promociones">
             <h2 className="mb-4 text-xl font-bold text-white">🎁 Promociones vigentes</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {PROMOS.map((promo) => (
-                <PromoCard
-                  key={promo.id}
-                  promo={promo}
-                  availableProducts={products.filter((p) => p.stock > 0 && p.brand === promo.brandName)}
-                />
-              ))}
+              {/* Un pack solo se ofrece si su marca está publicada y tiene algo en stock. */}
+              {PROMOS.map((promo) => ({ promo, available: products.filter((p) => p.stock > 0 && p.brand === promo.brandName) }))
+                .filter(({ available }) => available.length > 0)
+                .map(({ promo, available }) => (
+                  <PromoCard key={promo.id} promo={promo} availableProducts={available} />
+                ))}
             </div>
           </div>
 
@@ -185,7 +184,8 @@ type PromoCardProps = {
 };
 
 function PromoCard({ promo, availableProducts }: PromoCardProps) {
-  const { title, description, price: totalPrice, qty, badge, image } = promo;
+  const { title, description, price: totalPrice, qty, badge } = promo;
+  const image = promo.image ?? availableProducts.find((p) => p.imageUrl)?.imageUrl ?? "";
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<MockProduct[]>([]);
   const addItem = useCartStore((s) => s.addItem);
@@ -208,7 +208,7 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
       name: `${title} — ${flavors}`,
       slug: "",
       price: totalPrice,
-      imageUrl: image,
+      imageUrl: image || null,
       // Tope de packs iguales según el producto elegido con menos stock (el servidor lo vuelve a validar).
       stock: Math.max(1, Math.min(...selected.map((p) => Math.floor(p.stock / selected.filter((s) => s.id === p.id).length)))),
       pack: { promoId: promo.id, productIds: selected.map((p) => p.id) },
@@ -222,7 +222,7 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
     <>
       <div className="glass relative flex items-center gap-5 overflow-hidden rounded-2xl p-5">
         <div className="relative h-28 w-28 shrink-0">
-          <Image src={image} alt={title} fill className="object-contain" />
+          {image && <Image src={image} alt={title} fill className="object-contain" />}
         </div>
         <div className="flex-1">
           <span className="inline-block rounded-full bg-[var(--neon-green)]/10 px-2.5 py-0.5 text-[11px] font-bold text-[var(--neon-green)] ring-1 ring-[var(--neon-green)]/30">
