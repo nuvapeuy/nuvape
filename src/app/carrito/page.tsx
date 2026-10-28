@@ -46,6 +46,7 @@ export default function CartPage() {
                 )}
               </div>
               <div className="flex-1">
+                {item.brand && <p className="text-xs uppercase tracking-wide text-muted-foreground">{item.brand}</p>}
                 {item.slug ? (
                   <Link href={`/producto/${item.slug}`} className="font-semibold text-white hover:text-[var(--neon-purple)]">
                     {item.name}

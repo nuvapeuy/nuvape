@@ -14,7 +14,7 @@ export async function GET() {
             total: true,
             status: true,
             createdAt: true,
-            items: { select: { quantity: true, productName: true, product: { select: { name: true } } } },
+            items: { select: { quantity: true, productName: true, brandName: true, product: { select: { name: true } } } },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -55,7 +55,7 @@ export async function GET() {
           status: o.status,
           total: Number(o.total),
           createdAt: o.createdAt,
-          items: o.items.map((i) => `${i.quantity}x ${i.productName ?? i.product?.name ?? "?"}`).join(", "),
+          items: o.items.map((i) => `${i.quantity}x ${i.brandName ? `${i.brandName} · ` : ""}${i.productName ?? i.product?.name ?? "?"}`).join(", "),
         })),
       };
     });

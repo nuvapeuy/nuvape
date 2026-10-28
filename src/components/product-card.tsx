@@ -60,6 +60,7 @@ export function ProductCard({ product }: { product: MockProduct }) {
             addItem({
               productId: product.id,
               name: product.name,
+              brand: product.brand,
               slug: product.slug,
               price: product.price,
               imageUrl: product.imageUrl || null,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
+import { brandNamesByProductId } from "@/lib/products";
 import { notifyLowStockByWhatsApp } from "@/lib/whatsapp-notify";
 
 // Estados donde el stock ya fue descontado
@@ -24,6 +25,7 @@ async function decrementStock(productId: string, quantity: number) {
 type ItemInput = {
   productId?: string | null;
   productName?: string | null;
+  brandName?: string | null;
   quantity: number;
   unitPrice: number;
 };
@@ -80,13 +82,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         }
       }
 
-      // Reemplazar items
+      // Reemplazar items. Los ítems sin producto (packs viejos) conservan la marca que tenían.
+      const brands = await brandNamesByProductId(body.items.filter((i) => isRealProduct(i.productId)).map((i) => i.productId!));
       await prisma.orderItem.deleteMany({ where: { orderId: id } });
       await prisma.orderItem.createMany({
         data: body.items.map((item) => ({
           orderId: id,
           productId: isRealProduct(item.productId) ? item.productId! : null,
           productName: item.productName ?? null,
+          brandName: isRealProduct(item.productId) ? brands.get(item.productId!) ?? null : item.brandName ?? null,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
         })),

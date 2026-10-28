@@ -6,6 +6,8 @@ import { persist } from "zustand/middleware";
 export type CartItem = {
   productId: string;
   name: string;
+  // Opcional: los carritos guardados antes de A5 no la tienen.
+  brand?: string;
   slug: string;
   price: number;
   imageUrl: string | null;

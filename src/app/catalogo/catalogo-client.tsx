@@ -206,6 +206,7 @@ function PromoCard({ promo, availableProducts }: PromoCardProps) {
     addItem({
       productId: `promo-${promo.id}-${Date.now()}`,
       name: `${title} — ${flavors}`,
+      brand: promo.brandName,
       slug: "",
       price: totalPrice,
       imageUrl: image,
